@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>vetsi — Project Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --forest: #0d2b1f;
+  --forest-mid: #163d2c;
+  --forest-light: #1e5038;
+  --mint: #3ecf6e;
+  --mint-pale: rgba(62,207,110,0.10);
+  --mint-border: rgba(62,207,110,0.22);
+  --text-primary: #f0ede6;
+  --text-secondary: rgba(240,237,230,0.62);
+  --text-muted: rgba(240,237,230,0.35);
+  --card-bg: rgba(255,255,255,0.04);
+  --card-border: rgba(255,255,255,0.08);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background:var(--forest);
+  color:var(--text-primary);
+  font-family:'DM Sans', sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── BACKGROUND TEXTURE ── */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(62,207,110,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 80%, rgba(62,207,110,0.04) 0%, transparent 60%);
+  pointer-events:none; z-index:0;
+}
+
+/* ── LAYOUT ── */
+.wrap { max-width:1060px; margin:0 auto; padding:0 28px; position:relative; z-index:1; }
+
+/* ── HEADER ── */
+header {
+  padding:52px 0 40px;
+  border-bottom:1px solid var(--card-border);
+  margin-bottom:52px;
+}
+.header-inner {
+  display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;
+}
+.logo {
+  font-family:'Nunito', sans-serif; font-weight:900;
+  font-size:42px; letter-spacing:-1px; line-height:1;
+  color:var(--text-primary);
+}
+.logo span { color:var(--mint); }
+.logo-sub {
+  font-size:13px; color:var(--text-muted); margin-top:6px; font-weight:500;
+  letter-spacing:0.3px;
+}
+.header-badge {
+  display:flex; align-items:center; gap:8px;
+  background:var(--mint-pale); border:1px solid var(--mint-border);
+  border-radius:20px; padding:8px 16px;
+}
+.badge-dot {
+  width:8px; height:8px; border-radius:50%; background:var(--mint);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.5; transform:scale(0.85); }
+}
+.badge-text { font-size:12px; font-weight:600; color:var(--mint); }
+
+/* ── SECTION TITLE ── */
+.section-label {
+  font-size:11px; font-weight:700; text-transform:uppercase;
+  letter-spacing:1.5px; color:var(--text-muted); margin-bottom:18px;
+  display:flex; align-items:center; gap:10px;
+}
+.section-label::after {
+  content:''; flex:1; height:1px; background:var(--card-border);
+}
+
+/* ── HERO CARD (main app) ── */
+.hero-card {
+  background:linear-gradient(135deg, var(--forest-light) 0%, var(--forest-mid) 100%);
+  border:1px solid var(--mint-border);
+  border-radius:20px; padding:36px 40px;
+  display:flex; align-items:center; gap:36px;
+  margin-bottom:52px; position:relative; overflow:hidden;
+  text-decoration:none; color:inherit;
+  transition:border-color 0.2s, transform 0.2s;
+  cursor:pointer;
+}
+.hero-card:hover { border-color:var(--mint); transform:translateY(-2px); }
+.hero-card::before {
+  content:'';
+  position:absolute; top:-60px; right:-60px;
+  width:240px; height:240px;
+  background:radial-gradient(circle, rgba(62,207,110,0.10) 0%, transparent 70%);
+  border-radius:50%;
+}
+.hero-icon {
+  width:72px; height:72px; border-radius:16px; flex-shrink:0;
+  background:linear-gradient(135deg, var(--mint), #1a8a45);
+  display:flex; align-items:center; justify-content:center;
+  font-size:32px; position:relative; z-index:1;
+  box-shadow:0 8px 32px rgba(62,207,110,0.25);
+}
+.hero-body { flex:1; position:relative; z-index:1; }
+.hero-tag {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:1.2px; color:var(--mint); margin-bottom:6px;
+}
+.hero-title {
+  font-family:'Nunito', sans-serif; font-weight:900;
+  font-size:26px; margin-bottom:8px; line-height:1.2;
+}
+.hero-desc { font-size:14px; color:var(--text-secondary); line-height:1.6; max-width:540px; }
+.hero-arrow {
+  font-size:28px; color:var(--mint); position:relative; z-index:1;
+  transition:transform 0.2s;
+}
+.hero-card:hover .hero-arrow { transform:translateX(6px); }
+
+/* ── CARDS GRID ── */
+.cards-grid {
+  display:grid; grid-template-columns:repeat(3, 1fr);
+  gap:16px; margin-bottom:52px;
+}
+@media (max-width:780px) { .cards-grid { grid-template-columns:1fr 1fr; } }
+@media (max-width:520px) { .cards-grid { grid-template-columns:1fr; } }
+
+.card {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:14px; padding:24px;
+  text-decoration:none; color:inherit;
+  transition:border-color 0.2s, background 0.2s, transform 0.2s;
+  display:flex; flex-direction:column; gap:12px;
+  cursor:pointer;
+}
+.card:hover {
+  border-color:var(--mint-border); background:rgba(62,207,110,0.04);
+  transform:translateY(-2px);
+}
+.card-icon {
+  width:44px; height:44px; border-radius:10px;
+  background:var(--forest-mid); border:1px solid var(--card-border);
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px;
+}
+.card-tag {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:1px; color:var(--text-muted); margin-bottom:2px;
+}
+.card-title {
+  font-family:'Nunito', sans-serif; font-weight:900;
+  font-size:15px; line-height:1.3; margin-bottom:2px;
+}
+.card-desc { font-size:12px; color:var(--text-muted); line-height:1.55; flex:1; }
+.card-link {
+  font-size:11px; font-weight:600; color:var(--mint);
+  display:flex; align-items:center; gap:4px; margin-top:4px;
+}
+.card-link::after { content:'→'; transition:transform 0.15s; }
+.card:hover .card-link::after { transform:translateX(3px); }
+
+/* ── STATUS TABLE ── */
+.status-section { margin-bottom:52px; }
+.status-table {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:14px; overflow:hidden;
+}
+.status-row {
+  display:grid; grid-template-columns:1fr 120px 160px;
+  padding:14px 20px; border-bottom:1px solid var(--card-border);
+  align-items:center; gap:16px;
+  font-size:13px;
+}
+.status-row:last-child { border-bottom:none; }
+.status-row.header {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:1px; color:var(--text-muted);
+  background:rgba(0,0,0,0.15); padding:10px 20px;
+}
+.status-name { font-weight:600; color:var(--text-primary); }
+.status-desc { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.status-badge {
+  font-size:10px; font-weight:700; padding:3px 10px;
+  border-radius:10px; text-align:center; width:fit-content;
+}
+.status-badge.live { background:rgba(62,207,110,0.15); color:var(--mint); border:1px solid var(--mint-border); }
+.status-badge.wip { background:rgba(244,185,66,0.12); color:#f4b942; border:1px solid rgba(244,185,66,0.25); }
+.status-badge.next { background:var(--card-bg); color:var(--text-muted); border:1px solid var(--card-border); }
+.status-date { font-size:11px; color:var(--text-muted); }
+
+/* ── PROGRESS ── */
+.progress-section { margin-bottom:52px; }
+.progress-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+@media(max-width:600px){ .progress-grid { grid-template-columns:1fr 1fr; } }
+.progress-card {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:12px; padding:18px; text-align:center;
+}
+.progress-val {
+  font-family:'Nunito', sans-serif; font-weight:900;
+  font-size:30px; color:var(--mint); line-height:1; margin-bottom:4px;
+}
+.progress-label { font-size:11px; color:var(--text-muted); }
+
+/* ── FOOTER ── */
+footer {
+  border-top:1px solid var(--card-border);
+  padding:28px 0; margin-top:20px;
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:12px;
+}
+.footer-logo { font-family:'Nunito', sans-serif; font-weight:900; font-size:18px; }
+.footer-logo span { color:var(--mint); }
+.footer-text { font-size:12px; color:var(--text-muted); }
+.footer-links { display:flex; gap:16px; }
+.footer-links a {
+  font-size:12px; color:var(--text-muted); text-decoration:none;
+  transition:color 0.15s;
+}
+.footer-links a:hover { color:var(--mint); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div>
+        <div class="logo">vet<span>si</span></div>
+        <div class="logo-sub">UK veterinary careers platform · Private build · April 2026</div>
+      </div>
+      <div class="header-badge">
+        <div class="badge-dot"></div>
+        <div class="badge-text">Actively building</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- PROGRESS STATS -->
+  <div class="progress-section">
+    <div class="section-label">Build progress</div>
+    <div class="progress-grid">
+      <div class="progress-card">
+        <div class="progress-val">26</div>
+        <div class="progress-label">York practices mapped</div>
+      </div>
+      <div class="progress-card">
+        <div class="progress-val">6</div>
+        <div class="progress-label">Product files built</div>
+      </div>
+      <div class="progress-card">
+        <div class="progress-val">✓</div>
+        <div class="progress-label">Live database connected</div>
+      </div>
+      <div class="progress-card">
+        <div class="progress-val">✓</div>
+        <div class="progress-label">Real auth working</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP — HERO -->
+  <div class="section-label">Live product</div>
+  <a href="vetsi-v2.html" class="hero-card">
+    <div class="hero-icon">🗺️</div>
+    <div class="hero-body">
+      <div class="hero-tag">Candidate platform · Live with Supabase auth</div>
+      <div class="hero-title">vetsi Candidate App v2</div>
+      <div class="hero-desc">The core candidate experience — map of York practices, postcode search, commute distances, Express Interest, profile saved to live database, sign up and sign in working. The real product.</div>
+    </div>
+    <div class="hero-arrow">→</div>
+  </a>
+
+  <!-- OTHER FILES -->
+  <div class="section-label">All project files</div>
+  <div class="cards-grid">
+
+    <a href="vetsi-employer.html" class="card">
+      <div class="card-icon">🏥</div>
+      <div>
+        <div class="card-tag">Hospital side</div>
+        <div class="card-title">Employer Dashboard</div>
+      </div>
+      <div class="card-desc">Hospital-facing interface — candidate pipeline, practice profile editor, AI job advert generator, hiring dashboard.</div>
+      <div class="card-link">Open dashboard</div>
+    </a>
+
+    <a href="vetsi-brand-identity.html" class="card">
+      <div class="card-icon">🎨</div>
+      <div>
+        <div class="card-tag">Brand</div>
+        <div class="card-title">Brand Identity</div>
+      </div>
+      <div class="card-desc">Full brand system — colour palette, typography, logo variants, app icon sizes, UI components and usage guidelines.</div>
+      <div class="card-link">View brand pack</div>
+    </a>
+
+    <a href="vetsi-logos.html" class="card">
+      <div class="card-icon">✏️</div>
+      <div>
+        <div class="card-tag">Brand</div>
+        <div class="card-title">Logo Concepts</div>
+      </div>
+      <div class="card-desc">Early wordmark explorations that led to the final vetsi identity — wordmark variants in light, dark and mint.</div>
+      <div class="card-link">View logos</div>
+    </a>
+
+    <a href="vetsi-email.html" class="card">
+      <div class="card-icon">📧</div>
+      <div>
+        <div class="card-tag">Marketing</div>
+        <div class="card-title">Hospital Interest Email</div>
+      </div>
+      <div class="card-desc">The email a hospital receives when a candidate expresses interest — blurred candidate card, cost comparison, subscription CTA.</div>
+      <div class="card-link">View email</div>
+    </a>
+
+    <a href="vetsi-app.html" class="card">
+      <div class="card-icon">🗺️</div>
+      <div>
+        <div class="card-tag">Prototype · v1</div>
+        <div class="card-title">Candidate App v1</div>
+      </div>
+      <div class="card-desc">Original prototype with hardcoded data — all features visible including Vet Space, salary calculator, messages and news feed.</div>
+      <div class="card-link">Open prototype</div>
+    </a>
+
+    <a href="vetsi_forecast.xlsx" class="card">
+      <div class="card-icon">📊</div>
+      <div>
+        <div class="card-tag">Finance</div>
+        <div class="card-title">5-Year Financial Model</div>
+      </div>
+      <div class="card-desc">Full revenue forecast — candidate and hospital subscriptions, bear/base/bull scenarios, MRR projections to Year 5.</div>
+      <div class="card-link">Download Excel</div>
+    </a>
+
+  </div>
+
+  <!-- BUILD STATUS -->
+  <div class="status-section">
+    <div class="section-label">Feature status</div>
+    <div class="status-table">
+      <div class="status-row header">
+        <div>Feature</div>
+        <div>Status</div>
+        <div>Notes</div>
+      </div>
+      <div class="status-row">
+        <div>
+          <div class="status-name">Candidate sign up / sign in</div>
+          <div class="status-desc">Real Supabase authentication</div>
+        </div>
+        <div><span class="status-badge live">Live</span></div>
+        <div class="status-date">Built April 2026</div>
+      </div>
+      <div class="status-row">
+        <div>
+          <div class="status-name">Profile saved to database</div>
+          <div class="status-desc">Persists across sessions</div>
+        </div>
+        <div><span class="status-badge live">Live</span></div>
+        <div class="status-date">Built April 2026</div>
+      </div>
+      <div class="status-row">
+        <div>
+          <div class="status-name">York practice map</div>
+          <div class="status-desc">26 real practices, postcode search, filters</div>
+        </div>
+        <div><span class="status-badge live">Live</span></div>
+        <div class="status-date">Built April 2026</div>
+      </div>
+      <div class="status-row">
+        <div>
+          <div class="status-name">Express Interest → database</div>
+          <div class="status-desc">Saves to interests table in Supabase</div>
+        </div>
+        <div><span class="status-badge next">Next</span></div>
+        <div class="status-date">Up next</div>
+      </div>
+      <div class="status-row">
+        <div>
+          <div class="status-name">Hospital notification email</div>
+          <div class="status-desc">Real email fires via Resend on interest</div>
+        </div>
+        <div><span class="status-badge next">Next</span></div>
+        <div class="status-date">Planned</div>
+      </div>
+      <div class="status-row">
+        <div>
+          <div class="status-name">Hospital sign up + dashboard</div>
+          <div class="status-desc">Practices can claim and manage profile</div>
+        </div>
+        <div><span class="status-badge next">Next</span></div>
+        <div class="status-date">Planned</div>
+      </div>
+      <div class="status-row">
+        <div>
+          <div class="status-name">Stripe paywall</div>
+          <div class="status-desc">£99/month hospital subscription</div>
+        </div>
+        <div><span class="status-badge next">Next</span></div>
+        <div class="status-date">Planned</div>
+      </div>
+      <div class="status-row">
+        <div>
+          <div class="status-name">Full UK hospital database</div>
+          <div class="status-desc">5,331 practices loaded into Supabase</div>
+        </div>
+        <div><span class="status-badge next">Next</span></div>
+        <div class="status-date">Planned</div>
+      </div>
+      <div class="status-row">
+        <div>
+          <div class="status-name">Yorkshire-only regional launch</div>
+          <div class="status-desc">Waitlist for other regions</div>
+        </div>
+        <div><span class="status-badge next">Next</span></div>
+        <div class="status-date">Planned</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">vet<span>si</span></div>
+    <div class="footer-text">Private build · Not for public distribution · April 2026</div>
+    <div class="footer-links">
+      <a href="vetsi-v2.html">Open app</a>
+      <a href="vetsi-employer.html">Employer dashboard</a>
+      <a href="vetsi-brand-identity.html">Brand pack</a>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
