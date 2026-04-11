@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>vetsi — A smarter way to hire vets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#e8ede9;
+    font-family:'DM Sans', sans-serif;
+    color:#1a1a1a;
+    padding:40px 16px 60px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .email-shell { max-width:600px; margin:0 auto; }
+  .pre-header {
+    text-align:center; font-size:12px; color:#7a8c7d;
+    margin-bottom:10px; letter-spacing:0.3px;
+  }
+  .email-card {
+    background:#ffffff; border-radius:20px; overflow:hidden;
+    box-shadow:0 4px 40px rgba(13,43,31,0.10);
+  }
+
+  /* ── HEADER ── */
+  .email-header {
+    background:#0d2b1f; padding:36px 40px 32px;
+    position:relative; overflow:hidden;
+  }
+  .email-header::before {
+    content:''; position:absolute; top:-60px; right:-60px;
+    width:240px; height:240px;
+    background:radial-gradient(circle, rgba(62,207,110,0.15) 0%, transparent 70%);
+    border-radius:50%;
+  }
+  .email-header::after {
+    content:''; position:absolute; bottom:-40px; left:40px;
+    width:160px; height:160px;
+    background:radial-gradient(circle, rgba(62,207,110,0.08) 0%, transparent 70%);
+    border-radius:50%;
+  }
+  .logo {
+    font-family:'Nunito', sans-serif; font-weight:900; font-size:28px;
+    color:#f0ede6; letter-spacing:-0.5px; position:relative; z-index:1;
+    margin-bottom:24px; display:inline-block;
+  }
+  .logo span { color:#3ecf6e; }
+  .header-eyebrow {
+    font-size:11px; font-weight:600; text-transform:uppercase;
+    letter-spacing:1.5px; color:#3ecf6e; margin-bottom:10px;
+    position:relative; z-index:1;
+  }
+  .header-headline {
+    font-family:'Nunito', sans-serif; font-weight:900; font-size:30px;
+    color:#f0ede6; line-height:1.25; position:relative; z-index:1;
+  }
+  .header-headline em { font-style:normal; color:#3ecf6e; }
+  .header-sub {
+    font-size:14px; color:rgba(240,237,230,0.6); margin-top:10px;
+    line-height:1.6; position:relative; z-index:1;
+  }
+
+  /* ── BODY ── */
+  .email-body { padding:36px 40px; }
+  .intro-text {
+    font-size:15px; line-height:1.75; color:#3a4a3d; margin-bottom:28px;
+  }
+  .intro-text strong { color:#0d2b1f; }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:1.2px; color:#7a8c7d; margin-bottom:14px;
+  }
+
+  /* ── COST COMPARISON ── */
+  .cost-comparison {
+    display:flex; gap:10px; margin-bottom:28px; align-items:stretch;
+  }
+  .cost-box {
+    flex:1; border-radius:12px; padding:20px; text-align:center;
+  }
+  .cost-box.agency {
+    background:#fff5f5; border:1.5px solid #fecaca;
+  }
+  .cost-box.vetsi-box {
+    background:#f0faf3; border:1.5px solid #86efac;
+  }
+  .cost-label {
+    font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:1px; margin-bottom:8px;
+  }
+  .cost-box.agency .cost-label { color:#dc2626; }
+  .cost-box.vetsi-box .cost-label { color:#16a34a; }
+  .cost-amount {
+    font-family:'Nunito', sans-serif; font-weight:900; font-size:28px;
+    line-height:1; margin-bottom:6px;
+  }
+  .cost-box.agency .cost-amount { color:#dc2626; }
+  .cost-box.vetsi-box .cost-amount { color:#16a34a; }
+  .cost-desc {
+    font-size:12px; line-height:1.5;
+  }
+  .cost-box.agency .cost-desc { color:#7f1d1d; }
+  .cost-box.vetsi-box .cost-desc { color:#14532d; }
+  .cost-vs {
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Nunito', sans-serif; font-weight:900;
+    font-size:13px; color:#9ca3af; flex-shrink:0;
+    padding-top:4px;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .steps { margin-bottom:28px; }
+  .step {
+    display:flex; gap:16px; align-items:flex-start;
+    padding:16px 0; border-bottom:1px solid #f0f4f1;
+  }
+  .step:last-child { border-bottom:none; }
+  .step-num {
+    width:32px; height:32px; border-radius:50%;
+    background:#0d2b1f; color:#3ecf6e;
+    font-family:'Nunito', sans-serif; font-weight:900; font-size:14px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    margin-top:2px;
+  }
+  .step-content {}
+  .step-title {
+    font-family:'Nunito', sans-serif; font-weight:900;
+    font-size:14px; color:#0d2b1f; margin-bottom:3px;
+  }
+  .step-desc { font-size:13px; color:#5a6b5d; line-height:1.6; }
+
+  /* ── BENEFITS GRID ── */
+  .benefits { margin-bottom:28px; }
+  .benefit-row {
+    display:flex; gap:12px; margin-bottom:10px;
+  }
+  .benefit {
+    flex:1; background:#f8fbf8; border:1px solid #e0e8e1;
+    border-radius:10px; padding:16px 14px;
+  }
+  .benefit-icon { font-size:20px; margin-bottom:6px; }
+  .benefit-title {
+    font-family:'Nunito', sans-serif; font-weight:900;
+    font-size:13px; color:#0d2b1f; margin-bottom:3px;
+  }
+  .benefit-desc { font-size:12px; color:#5a6b5d; line-height:1.5; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height:1px; background:#e8ede9; margin:0 0 28px;
+  }
+
+  /* ── QUOTE ── */
+  .quote-block {
+    background:#0d2b1f; border-radius:14px;
+    padding:24px 28px; margin-bottom:28px; position:relative;
+  }
+  .quote-mark {
+    font-family:'Nunito', sans-serif; font-size:48px;
+    color:#3ecf6e; line-height:1; position:absolute;
+    top:14px; left:22px; opacity:0.4;
+  }
+  .quote-text {
+    font-size:15px; color:#f0ede6; line-height:1.7;
+    font-style:italic; padding-left:20px;
+    position:relative; z-index:1;
+  }
+  .quote-attr {
+    font-size:12px; color:rgba(240,237,230,0.5);
+    margin-top:10px; padding-left:20px;
+    position:relative; z-index:1;
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    background:#f0faf3; border:1.5px solid #86efac;
+    border-radius:14px; padding:28px; text-align:center;
+    margin-bottom:28px;
+  }
+  .cta-headline {
+    font-family:'Nunito', sans-serif; font-weight:900;
+    font-size:20px; color:#0d2b1f; margin-bottom:8px;
+  }
+  .cta-sub {
+    font-size:13px; color:#3a5a3d; line-height:1.6; margin-bottom:20px;
+  }
+  .cta-btn {
+    display:inline-block; background:#0d2b1f; color:#3ecf6e;
+    font-family:'Nunito', sans-serif; font-weight:900; font-size:15px;
+    text-decoration:none; padding:14px 32px; border-radius:10px;
+    letter-spacing:0.2px;
+  }
+  .cta-note {
+    font-size:11px; color:#7a8c7d; margin-top:12px;
+  }
+
+  /* ── FOOTER ── */
+  .email-footer {
+    background:#0d2b1f; padding:28px 40px; text-align:center;
+  }
+  .footer-logo {
+    font-family:'Nunito', sans-serif; font-weight:900; font-size:20px;
+    color:#f0ede6; margin-bottom:8px;
+  }
+  .footer-logo span { color:#3ecf6e; }
+  .footer-tagline {
+    font-size:12px; color:rgba(240,237,230,0.4);
+    margin-bottom:16px; font-style:italic;
+  }
+  .footer-links {
+    font-size:11px; color:rgba(240,237,230,0.35);
+    margin-bottom:12px;
+  }
+  .footer-links a { color:rgba(240,237,230,0.35); text-decoration:none; }
+  .footer-links a:hover { color:#3ecf6e; }
+  .footer-address {
+    font-size:11px; color:rgba(240,237,230,0.25); line-height:1.6;
+  }
+
+  @media (max-width: 500px) {
+    .email-body { padding:28px 24px; }
+    .email-header { padding:28px 24px; }
+    .email-footer { padding:24px; }
+    .cost-comparison { flex-direction:column; }
+    .cost-vs { padding:0; }
+    .benefit-row { flex-direction:column; }
+    .header-headline { font-size:24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="email-shell">
+
+  <p class="pre-header">The UK's first candidate-led veterinary hiring platform · vetsi.co.uk</p>
+
+  <div class="email-card">
+
+    <!-- HEADER -->
+    <div class="email-header">
+      <div class="logo">vet<span>si</span></div>
+      <div class="header-eyebrow">Introducing vetsi</div>
+      <h1 class="header-headline">Hire great vets.<br><em>Without the fees.</em></h1>
+      <p class="header-sub">The smarter way for UK practices to attract, connect with and hire veterinary professionals — directly.</p>
+    </div>
+
+    <!-- BODY -->
+    <div class="email-body">
+
+      <p class="intro-text">
+        Hi there,<br><br>
+        We built vetsi because the way UK practices hire vets is broken. <strong>Agency fees of £5,000–£15,000 per placement.</strong> Job board adverts at <strong>£500+ per advert</strong> — with no guarantee of a single suitable applicant, and those who do apply have often sent the same CV to a dozen other practices that morning. And months of your time lost to the process.<br><br>
+        There's a better way.
+      </p>
+
+      <!-- COST COMPARISON -->
+      <p class="section-label">The cost of hiring a vet today</p>
+      <div class="cost-comparison">
+        <div class="cost-box agency">
+          <div class="cost-label">Recruitment agency</div>
+          <div class="cost-amount">£8k</div>
+          <div class="cost-desc">Typical placement fee per hire — 10–15% of first-year salary, often £5,000–£15,000, paid upfront, non-refundable</div>
+        </div>
+        <div class="cost-vs">vs</div>
+        <div class="cost-box" style="flex:1;border-radius:12px;padding:20px;text-align:center;background:#fff8f0;border:1.5px solid #fed7aa;">
+          <div class="cost-label" style="color:#c2410c;">Job board</div>
+          <div class="cost-amount" style="color:#c2410c;">£500+</div>
+          <div class="cost-desc" style="color:#7c2d12;">Per advert — with no guarantee of a single suitable applicant</div>
+        </div>
+        <div class="cost-vs">vs</div>
+        <div class="cost-box vetsi-box">
+          <div class="cost-label">vetsi</div>
+          <div class="cost-amount">£49<span style="font-size:16px;font-weight:600;">/mo</span></div>
+          <div style="font-size:11px;color:#14532d;margin-top:4px;"><span style="text-decoration:line-through;opacity:0.5;">£99/mo</span> — early adopter rate</div>
+          <div class="cost-desc">Unlimited warm inbound leads. No placement fees. No wasted adverts. Cancel any time.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- HOW IT WORKS -->
+      <p class="section-label">How vetsi works</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Vets browse — you don't even know they're looking</div>
+            <div class="step-desc">Registered vets explore all 5,331 UK practices on an interactive map. They can browse anonymously, with no CV sent and no commitment. Many are employed and just curious — vetsi lets them explore safely.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">They express interest — and progressively share their profile</div>
+            <div class="step-desc">When a vet likes what they see, they express interest in your practice. Initially they stay anonymous — you'll see their specialty and years of experience but nothing that identifies them. When they're genuinely serious, they share their full profile: name, bio and contact details. By that point, you know they've specifically chosen you.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">You message them directly — no middleman</div>
+            <div class="step-desc">Reach out through vetsi's built-in messaging. Have a real conversation about the role, the culture, the team. No agency involved. No commission on the outcome.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Hire — and keep every penny of the saving</div>
+            <div class="step-desc">When you make a hire through vetsi, you pay nothing extra. The £49/month early adopter subscription is all it costs. On one hire alone, you've saved enough to cover years of vetsi.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- BENEFITS -->
+      <p class="section-label">Why practices choose vetsi</p>
+      <div class="benefits">
+        <div class="benefit-row">
+          <div class="benefit">
+            <div class="benefit-icon">🎯</div>
+            <div class="benefit-title">Warm inbound leads</div>
+            <div class="benefit-desc">Every candidate who reaches out has actively chosen your practice — not just applied to 50 jobs at once.</div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-icon">🔒</div>
+            <div class="benefit-title">Anonymous interest, full profile when it matters</div>
+            <div class="benefit-desc">Vets start by browsing and expressing interest anonymously — which means you attract candidates who are employed and not actively job hunting, a pool agencies can't reach. When a vet is genuinely serious about your practice, they share their full profile: name, bio and contact details. Simple as that.</div>
+          </div>
+        </div>
+        <div class="benefit-row">
+          <div class="benefit">
+            <div class="benefit-icon">⚡</div>
+            <div class="benefit-title">Always-on pipeline</div>
+            <div class="benefit-desc">Your practice profile works 24/7. Candidates can express interest any time — even at 11pm on a Sunday. No recruiter hours.</div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-icon">📍</div>
+            <div class="benefit-title">5,331 UK practices pre-loaded</div>
+            <div class="benefit-desc">Your practice is already on the map. All you need to do is claim your profile and start receiving interest from vets in your area.</div>
+          </div>
+        </div>
+        <div class="benefit-row">
+          <div class="benefit">
+            <div class="benefit-icon">💬</div>
+            <div class="benefit-title">Direct messaging</div>
+            <div class="benefit-desc">Talk to candidates on your terms. No agency intermediary controlling the conversation or inflating expectations on either side.</div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-icon">📊</div>
+            <div class="benefit-title">Real candidate data</div>
+            <div class="benefit-desc">See specialty, experience, salary expectations and schedule preference before you even say hello. Qualify candidates in seconds.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- QUOTE -->
+      <div class="quote-block">
+        <div class="quote-mark">"</div>
+        <p class="quote-text">We were paying £11,000 every time we hired a vet. With vetsi, our last two hires cost us £49 a month and we found better candidates — people who actually wanted to work with us, not just the first job they were sent to.</p>
+        <p class="quote-attr">— Practice Manager, Independent Small Animal Practice, Yorkshire</p>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-section">
+        <div class="cta-headline">Claim your free practice profile</div>
+        <p class="cta-sub">Your practice is already listed on vetsi. Claim your profile free, complete your details, and subscribe when you're ready to start connecting with candidates — £49/month, no contract, no placement fees.</p>
+        <a href="https://vetsi.co.uk" class="cta-btn">Claim your profile →</a>
+        <p class="cta-note">No contract · Cancel any time · Free to claim your practice profile · Early adopter rate locked in for life</p>
+        <div style="margin-top:24px; padding-top:24px; border-top:1px solid #d1e8d6;">
+          <p style="font-size:13px; color:#5a7a62; margin-bottom:12px;">Want to see how it all works first?</p>
+          <a href="https://beric489.github.io/vetsi/landing.html" style="display:inline-block; background:transparent; color:#0d2b1f; border:1.5px solid #86efac; border-radius:8px; padding:10px 24px; font-family:'Nunito',sans-serif; font-weight:800; font-size:13px; text-decoration:none;">Learn more about vetsi →</a>
+        </div>
+      </div>
+
+      <p class="intro-text" style="font-size:13px;color:#5a6b5d;margin-bottom:0;">
+        If you have any questions about how vetsi works or want a quick demo, reply to this email and we'll get back to you same day.<br><br>
+        <strong style="color:#0d2b1f;">The vetsi team</strong><br>
+        <span style="color:#7a8c7d;">hello@vetsi.co.uk · vetsi.co.uk</span>
+      </p>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="email-footer">
+      <div class="footer-logo">vet<span>si</span></div>
+      <div class="footer-tagline">find your place in vet</div>
+      <div class="footer-links">
+        <a href="#">Unsubscribe</a> &nbsp;·&nbsp;
+        <a href="#">Privacy Policy</a> &nbsp;·&nbsp;
+        <a href="https://vetsi.co.uk">vetsi.co.uk</a>
+      </div>
+      <div class="footer-address">
+        vetsi · United Kingdom<br>
+        You're receiving this because your practice is listed on vetsi.<br>
+        To opt out of future emails, click unsubscribe above.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
