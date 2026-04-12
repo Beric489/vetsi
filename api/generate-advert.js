@@ -1,20 +1,38 @@
-// Vercel serverless function — api/generate-advert.js
-// Set ANTHROPIC_API_KEY in Vercel environment variables
+export const config = { runtime: 'edge' };
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+export default async function handler(req) {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 200, headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: 'API key not configured' }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
 
   try {
-    const { prompt } = req.body;
-    if (!prompt) return res.status(400).json({ error: 'No prompt provided' });
+    const body = await req.json();
+    const { prompt } = body;
+
+    if (!prompt) {
+      return new Response(JSON.stringify({ error: 'No prompt provided' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     const systemPrompt = `You write job adverts for UK veterinary practices. Your adverts are warm, specific, and honest — written like a person, not a HR department.
 
@@ -76,7 +94,6 @@ Benefits
 • Private medical insurance
 • 24/7 Employee Assistance Programme
 • Enhanced family-friendly policies
-• A range of wellbeing initiatives
 • £1,250 CPD allowance + 40 hours paid CPD leave (pro rata)
 • Certificate support available
 • Vetlexicon access
@@ -103,16 +120,22 @@ Now write a new advert using the practice details and role information provided.
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      return res.status(response.status).json({ error: error.error?.message || 'API error' });
+      const error = await response.json().catch(() => ({}));
+      return new Response(JSON.stringify({ error: error.error?.message || 'API error' }), {
+        status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     const data = await response.json();
     const text = data.content?.[0]?.text || '';
-    return res.status(200).json({ text });
+
+    return new Response(JSON.stringify({ text }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
 
   } catch (err) {
-    console.error('Proxy error:', err);
-    return res.status(500).json({ error: err.message });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 }
