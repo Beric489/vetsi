@@ -1,7 +1,1 @@
-{
-  "functions": {
-    "api/generate-advert.js": {
-      "runtime": "edge"
-    }
-  }
-}
+{}
