@@ -1,0 +1,2531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>vetsi — Practice Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --forest:  #0d2b1f;
+  --deep:    #1a3d2b;
+  --mid:     #2d6a4a;
+  --mint:    #3ecf6e;
+  --mint-l:  #6fde94;
+  --mint-p:  #edfaf3;
+  --mist:    #f7faf8;
+  --white:   #ffffff;
+  --ink:     #0a1a10;
+  --body:    #2c4035;
+  --muted:   #6b8878;
+  --light:   #a8bdb4;
+  --border:  #e0ece6;
+  --amber:   #f59e0b;
+  --amber-p: #fef3c7;
+  --hire:    #10b981;
+  --hire-p:  #d1fae5;
+  --blue:    #3b82f6;
+  --blue-p:  #dbeafe;
+  --red:     #ef4444;
+  --red-p:   #fee2e2;
+  --purple:  #8b5cf6;
+  --purp-p:  #ede9fe;
+  --ss: 0 1px 3px rgba(0,0,0,.06);
+  --sm: 0 4px 16px rgba(0,0,0,.08);
+  --sl: 0 16px 48px rgba(0,0,0,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--mist);color:var(--ink);}
+
+/* ══ SHELL ══ */
+.shell{display:flex;height:100vh;}
+
+/* ══ SIDEBAR — white with forest accents (distinct from candidate dark sidebar) ══ */
+.sidebar{
+  width:230px;flex-shrink:0;
+  background:var(--white);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  z-index:100;
+}
+.sb-logo{
+  padding:20px 20px 14px;
+  border-bottom:1px solid var(--border);
+}
+.sb-logo-word{
+  font-family:'Nunito',sans-serif;
+  font-size:26px;font-weight:900;
+  color:var(--forest);letter-spacing:-1px;line-height:1;
+}
+.sb-logo-word em{color:var(--mint);font-style:normal;}
+.sb-logo-tag{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:3px;}
+.sb-logo-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--mint-p);border:1px solid var(--mint);
+  border-radius:6px;padding:3px 8px;margin-top:8px;
+}
+.sb-logo-badge span{font-size:10.5px;font-weight:700;color:var(--deep);}
+
+.sb-nav{flex:1;padding:10px;overflow-y:auto;}
+.sb-nav::-webkit-scrollbar{width:0;}
+.sb-sec{font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--light);padding:10px 12px 5px;}
+.sbn{
+  display:flex;align-items:center;gap:11px;
+  padding:10px 13px;border-radius:9px;
+  cursor:pointer;color:var(--muted);
+  font-size:13.5px;font-weight:500;
+  transition:all .15s;margin-bottom:1px;
+  border:none;background:transparent;width:100%;
+  font-family:'DM Sans',sans-serif;position:relative;
+}
+.sbn:hover{background:var(--mist);color:var(--ink);}
+.sbn.on{background:var(--forest);color:var(--white);font-weight:700;}
+.sbn-ico{font-size:16px;flex-shrink:0;width:20px;text-align:center;}
+.sbn-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;}
+.sbn.on .sbn-badge{background:var(--mint);color:var(--forest);}
+
+.sb-foot{
+  padding:14px 16px;
+  border-top:1px solid var(--border);
+}
+.sb-practice{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;background:var(--mist);
+  border-radius:10px;border:1px solid var(--border);
+  cursor:pointer;transition:border-color .15s;
+}
+.sb-practice:hover{border-color:var(--mint);}
+.sb-pico{width:36px;height:36px;border-radius:8px;background:var(--mint-p);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.sb-pname{font-size:12.5px;font-weight:700;color:var(--ink);}
+.sb-prole{font-size:10.5px;color:var(--muted);margin-top:1px;}
+.sb-upgrade{
+  margin-top:8px;
+  background:linear-gradient(135deg,var(--forest),var(--deep));
+  border-radius:10px;padding:12px 14px;
+  display:flex;align-items:center;gap:10px;
+  cursor:pointer;transition:opacity .15s;
+}
+.sb-upgrade:hover{opacity:.9;}
+.sb-upgrade-text{font-size:12px;font-weight:700;color:var(--white);line-height:1.3;}
+.sb-upgrade-sub{font-size:10px;color:rgba(255,255,255,.55);margin-top:2px;}
+
+/* ══ MAIN ══ */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+
+/* ══ TOPBAR ══ */
+.topbar{
+  height:54px;flex-shrink:0;
+  background:var(--white);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 24px;gap:14px;z-index:90;
+}
+.topbar-title{font-family:'Nunito',sans-serif;font-size:17px;font-weight:800;color:var(--ink);flex:1;letter-spacing:-.3px;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.notif-btn{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--mist);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;position:relative;
+  transition:border-color .15s;
+}
+.notif-btn:hover{border-color:var(--mint);}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid #fff;}
+
+/* Notification dropdown */
+.notif-wrap{position:relative;}
+.notif-dropdown{
+  display:none;position:absolute;top:calc(100% + 8px);right:0;
+  width:320px;background:var(--white);border:1px solid var(--border);
+  border-radius:14px;box-shadow:var(--sl);z-index:500;overflow:hidden;
+}
+.notif-dropdown.open{display:block;}
+.notif-dd-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.notif-dd-title{font-weight:700;font-size:14px;color:var(--ink);}
+.notif-dd-clear{font-size:11px;color:var(--muted);cursor:pointer;font-weight:500;}
+.notif-dd-clear:hover{color:var(--mint);}
+.notif-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;display:flex;gap:12px;align-items:flex-start;}
+.notif-item:hover{background:var(--mist);}
+.notif-item:last-child{border-bottom:none;}
+.notif-item.unread{background:#f0faf4;}
+.notif-ico{font-size:20px;flex-shrink:0;margin-top:1px;}
+.notif-text{flex:1;}
+.notif-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;line-height:1.4;}
+.notif-sub{font-size:11px;color:var(--muted);}
+.notif-empty{padding:24px;text-align:center;font-size:13px;color:var(--muted);}
+.tb-av{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--mint),var(--hire));
+  display:flex;align-items:center;justify-content:center;
+  color:var(--forest);font-weight:800;font-size:12px;
+  cursor:pointer;border:2px solid var(--border);
+}
+
+/* ══ BODY ══ */
+.body{flex:1;overflow:hidden;position:relative;}
+.pane{display:none;width:100%;height:100%;position:absolute;inset:0;overflow-y:auto;}
+.pane.on{display:block;}
+.pane.on.flex{display:flex;}
+.pane::-webkit-scrollbar{width:4px;}
+.pane::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* ══════════════════════════════════
+   OVERVIEW PANE
+══════════════════════════════════ */
+.dash-wrap{max-width:1000px;margin:0 auto;padding:28px 24px;}
+
+.welcome-banner{
+  background:linear-gradient(135deg,var(--forest) 0%,var(--deep) 50%,#225038 100%);
+  border-radius:18px;padding:28px 32px;color:#fff;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:22px;position:relative;overflow:hidden;
+}
+.wb-orb{position:absolute;border-radius:50%;background:rgba(62,207,110,.08);}
+.wb-left{position:relative;z-index:1;}
+.wb-eyebrow{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--mint);margin-bottom:8px;}
+.wb-title{font-family:'Nunito',sans-serif;font-size:24px;font-weight:900;margin-bottom:5px;letter-spacing:-.3px;}
+.wb-sub{font-size:13.5px;opacity:.7;margin-bottom:16px;}
+.wb-actions{display:flex;gap:8px;}
+.btn-mint{background:var(--mint);color:var(--forest);border:none;padding:10px 18px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-mint:hover{background:var(--mint-l);}
+.btn-ghost-w{background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.25);padding:10px 18px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.btn-ghost-w:hover{background:rgba(255,255,255,.2);}
+.wb-right{position:relative;z-index:1;}
+.stat-bubble{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:16px 22px;text-align:center;}
+.sb-val{font-family:'Nunito',sans-serif;font-size:36px;font-weight:900;color:var(--mint);}
+.sb-lbl{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.kpi-card{background:var(--white);border-radius:14px;padding:20px;border:1px solid var(--border);position:relative;overflow:hidden;}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi-card.kc-green::before{background:var(--mint);}
+.kpi-card.kc-amber::before{background:var(--amber);}
+.kpi-card.kc-blue::before{background:var(--blue);}
+.kpi-card.kc-purple::before{background:var(--purple);}
+.kpi-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px;}
+.kpi-val{font-family:'Nunito',sans-serif;font-size:32px;font-weight:900;color:var(--ink);letter-spacing:-.5px;line-height:1;}
+.kpi-change{font-size:12px;font-weight:600;margin-top:5px;}
+.kpi-change.up{color:var(--hire);}
+.kpi-change.neutral{color:var(--muted);}
+
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.dash-card{background:var(--white);border-radius:14px;border:1px solid var(--border);overflow:hidden;}
+.dc-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.dc-title{font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.2px;}
+.dc-link{font-size:12px;font-weight:600;color:var(--mint);cursor:pointer;}
+.dc-body{padding:14px 18px;}
+
+/* activity feed */
+.act-item{display:flex;gap:11px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+.act-item:last-child{border-bottom:none;}
+.act-ico{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.act-ico.green{background:var(--hire-p);}
+.act-ico.amber{background:var(--amber-p);}
+.act-ico.blue{background:var(--blue-p);}
+.act-ico.purple{background:var(--purp-p);}
+.act-text{flex:1;}
+.act-main{font-size:13px;color:var(--ink);font-weight:500;line-height:1.4;}
+.act-main strong{font-weight:700;}
+.act-time{font-size:11px;color:var(--light);margin-top:2px;}
+
+/* pipeline mini */
+.pipe-mini{display:flex;gap:6px;margin-bottom:6px;}
+.pm-col{flex:1;border-radius:8px;padding:10px;text-align:center;}
+.pm-val{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;color:var(--ink);}
+.pm-lbl{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;}
+
+/* profile completeness */
+.prog-item{margin-bottom:10px;}
+.prog-label{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12.5px;color:var(--ink);font-weight:500;}
+.prog-pct{color:var(--muted);font-size:12px;}
+.prog-bar{height:7px;background:var(--mist);border-radius:4px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:4px;transition:width .3s;}
+
+/* ══════════════════════════════════
+   CANDIDATES PANE
+══════════════════════════════════ */
+#pCandidates.flex{flex-direction:row;}
+.cand-list-col{width:300px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.clc-head{padding:16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.clc-title{font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.2px;margin-bottom:12px;}
+.pipe-tabs{display:flex;flex-direction:column;gap:3px;}
+.ptab{display:flex;align-items:center;justify-content:space-between;padding:8px 11px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .14s;}
+.ptab.on{background:var(--forest);color:var(--white);}
+.ptab:hover:not(.on){background:var(--mist);color:var(--ink);}
+.pcnt{font-size:10px;font-weight:700;padding:2px 7px;border-radius:7px;}
+.ptab.on .pcnt{background:var(--mint);color:var(--forest);}
+.ptab:not(.on) .pcnt{background:var(--mist);color:var(--muted);}
+
+.clist{flex:1;overflow-y:auto;padding:8px;}
+.clist::-webkit-scrollbar{width:3px;}
+.clist::-webkit-scrollbar-thumb{background:var(--border);}
+.ccard{background:var(--white);border-radius:10px;padding:13px;margin-bottom:6px;cursor:pointer;border:1.5px solid var(--border);transition:all .15s;}
+.ccard:hover,.ccard.on{border-color:var(--mint);background:var(--mint-p);}
+.cc-top{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;}
+.cc-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;flex-shrink:0;}
+.cc-name{font-weight:700;font-size:13px;color:var(--ink);}
+.cc-role{font-size:11.5px;color:var(--muted);}
+.cc-tags{display:flex;gap:4px;flex-wrap:wrap;}
+.tag{font-size:10.5px;padding:2px 8px;border-radius:8px;font-weight:600;}
+.t-h{background:var(--hire-p);color:var(--hire);}
+.t-t{background:var(--blue-p);color:var(--blue);}
+.t-p{background:var(--purp-p);color:var(--purple);}
+.t-a{background:var(--amber-p);color:#92400e;}
+.t-m{background:var(--mist);color:var(--muted);border:1px solid var(--border);}
+
+/* candidate detail */
+.cand-detail{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--mist);}
+.cd-head{background:var(--white);border-bottom:1px solid var(--border);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.cd-title{font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.2px;}
+.cd-acts{display:flex;gap:6px;}
+.btn-act{padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--body);transition:all .14s;font-family:'DM Sans',sans-serif;}
+.btn-act:hover{border-color:var(--mint);color:var(--ink);}
+.btn-act.pos{background:var(--hire);color:#fff;border-color:var(--hire);}
+.btn-act.pos:hover{background:#0ea570;}
+.btn-act.neg{background:var(--red-p);color:var(--red);border-color:var(--red);}
+.cd-body{flex:1;overflow-y:auto;padding:24px;}
+.cd-body::-webkit-scrollbar{width:3px;}
+.cd-body::-webkit-scrollbar-thumb{background:var(--border);}
+.cand-hero{
+  background:linear-gradient(135deg,var(--forest),var(--deep));
+  border-radius:14px;padding:24px;color:#fff;
+  display:flex;gap:18px;align-items:center;margin-bottom:18px;
+}
+.ch-av{width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;border:3px solid rgba(62,207,110,.4);flex-shrink:0;}
+.ch-name{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;margin-bottom:3px;letter-spacing:-.2px;}
+.ch-sub{opacity:.72;font-size:13px;margin-bottom:9px;}
+.ch-tags{display:flex;gap:6px;flex-wrap:wrap;}
+.ch-tag{background:rgba(62,207,110,.18);border:1px solid rgba(62,207,110,.28);padding:3px 11px;border-radius:14px;font-size:11.5px;font-weight:600;color:var(--mint-l);}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.dc{background:var(--white);border-radius:12px;padding:16px;border:1px solid var(--border);}
+.dc.full{grid-column:1/-1;}
+.dch{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:11px;}
+.ir{display:flex;justify-content:space-between;align-items:center;padding:6.5px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.ir:last-child{border-bottom:none;padding-bottom:0;}
+.il{color:var(--muted);font-size:12px;}
+.iv{color:var(--ink);font-weight:600;}
+.qi{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--border);}
+.qi:last-child{border-bottom:none;}
+.qii{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.qii.v{background:var(--hire-p);}
+.qii.p{background:var(--amber-p);}
+.qn{font-weight:700;color:var(--ink);font-size:12.5px;}
+.qs{font-size:11px;color:var(--muted);}
+.vb{font-size:10px;padding:2px 8px;border-radius:7px;font-weight:700;}
+.vb.v{background:var(--hire-p);color:var(--hire);}
+.vb.p{background:var(--amber-p);color:#92400e;}
+
+/* messaging panel inside candidate detail */
+.msg-mini{background:var(--mist);border-radius:10px;padding:14px;margin-top:14px;}
+.mm-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px;}
+.mm-bub{padding:9px 12px;border-radius:10px;font-size:12.5px;line-height:1.55;margin-bottom:6px;max-width:90%;}
+.mm-bub.in{background:var(--white);color:var(--ink);border-bottom-left-radius:3px;box-shadow:var(--ss);}
+.mm-bub.out{background:var(--forest);color:#fff;border-bottom-right-radius:3px;margin-left:auto;}
+.mm-t{font-size:10px;color:var(--light);margin-bottom:8px;padding-left:2px;}
+.mm-t.right{text-align:right;}
+.mm-input{display:flex;gap:7px;margin-top:10px;}
+.mm-ta{flex:1;background:var(--white);border:1.5px solid var(--border);border-radius:9px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;resize:none;outline:none;color:var(--ink);transition:border-color .2s;}
+.mm-ta:focus{border-color:var(--mint);}
+.mm-ta::placeholder{color:var(--light);}
+.mm-send{width:36px;height:36px;background:var(--mint);border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--forest);font-size:14px;font-weight:800;flex-shrink:0;}
+
+/* ══════════════════════════════════
+   MY PRACTICE PANE
+══════════════════════════════════ */
+.prac-wrap{max-width:860px;margin:0 auto;padding:28px 24px;}
+
+.prac-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+.prac-title-block{}
+.prac-title{font-family:'Nunito',sans-serif;font-size:22px;font-weight:900;color:var(--ink);letter-spacing:-.3px;margin-bottom:3px;}
+.prac-sub{font-size:13px;color:var(--muted);}
+.prac-status{display:flex;align-items:center;gap:8px;}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:700;}
+.sp-auto{background:var(--amber-p);color:#92400e;border:1px solid #fde68a;}
+.sp-live{background:var(--hire-p);color:var(--hire);border:1px solid #a7f3d0;}
+
+.prac-tabs{display:flex;gap:3px;background:var(--mist);border-radius:10px;padding:3px;margin-bottom:22px;border:1px solid var(--border);}
+.prac-tab{padding:8px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;border:none;background:transparent;font-family:'DM Sans',sans-serif;}
+.prac-tab.on{background:var(--white);color:var(--ink);box-shadow:var(--ss);}
+.prac-tab:hover:not(.on){color:var(--ink);}
+
+/* form sections */
+.form-section{background:var(--white);border-radius:14px;border:1px solid var(--border);margin-bottom:16px;overflow:hidden;}
+.fs-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.fs-title{font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.2px;}
+.fs-badge{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:8px;}
+.fs-body{padding:20px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.form-row.full{grid-template-columns:1fr;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-label{font-size:12px;font-weight:700;color:var(--ink);}
+.form-hint{font-size:11px;color:var(--muted);}
+.form-input{
+  background:var(--mist);border:1.5px solid var(--border);
+  border-radius:9px;padding:10px 14px;
+  font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--ink);
+  outline:none;transition:border-color .2s;width:100%;
+}
+.form-input:focus{border-color:var(--mint);background:var(--white);}
+.form-input::placeholder{color:var(--light);}
+.form-textarea{
+  background:var(--mist);border:1.5px solid var(--border);
+  border-radius:9px;padding:11px 14px;
+  font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--ink);
+  outline:none;transition:border-color .2s;width:100%;resize:vertical;
+  min-height:90px;
+}
+.form-textarea:focus{border-color:var(--mint);background:var(--white);}
+.form-textarea::placeholder{color:var(--light);}
+.form-select{
+  background:var(--mist);border:1.5px solid var(--border);
+  border-radius:9px;padding:10px 14px;
+  font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--ink);
+  outline:none;transition:border-color .2s;width:100%;
+  cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b8878' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+  padding-right:36px;
+}
+.form-select:focus{border-color:var(--mint);background-color:var(--white);}
+
+/* toggle */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);}
+.toggle-row:last-child{border-bottom:none;}
+.tr-label{font-weight:600;font-size:13px;color:var(--ink);}
+.tr-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.tog{width:42px;height:23px;background:var(--border);border-radius:12px;position:relative;cursor:pointer;transition:background .18s;flex-shrink:0;}
+.tog.on{background:var(--mint);}
+.tog-k{width:17px;height:17px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.tog.on .tog-k{left:22px;}
+
+/* tag pills */
+.tag-cloud{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px;}
+.tag-pill{
+  padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;
+  cursor:pointer;border:1.5px solid var(--border);background:var(--white);
+  color:var(--muted);transition:all .14s;
+}
+.tag-pill.on{background:var(--forest);border-color:var(--forest);color:var(--white);}
+.tag-pill:hover:not(.on){border-color:var(--forest);color:var(--forest);}
+
+/* profile preview */
+.preview-card{
+  background:linear-gradient(135deg,var(--forest),var(--deep));
+  border-radius:14px;padding:22px;color:#fff;margin-bottom:16px;
+}
+.preview-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mint);margin-bottom:12px;}
+.preview-name{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;margin-bottom:3px;letter-spacing:-.2px;}
+.preview-loc{font-size:12.5px;opacity:.7;margin-bottom:10px;}
+.preview-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.pp{background:rgba(62,207,110,.18);border:1px solid rgba(62,207,110,.28);padding:3px 11px;border-radius:14px;font-size:11.5px;font-weight:600;color:var(--mint-l);}
+.preview-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.ps{background:rgba(255,255,255,.08);border-radius:8px;padding:10px;text-align:center;}
+.ps-val{font-family:'Nunito',sans-serif;font-size:17px;font-weight:800;}
+.ps-lbl{font-size:10px;opacity:.6;margin-top:2px;}
+
+/* save bar */
+.save-bar{
+  background:var(--white);border-top:1px solid var(--border);
+  padding:14px 24px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;bottom:0;
+}
+.save-hint{font-size:12.5px;color:var(--muted);}
+
+/* ══════════════════════════════════
+   AI ADVERT GENERATOR
+══════════════════════════════════ */
+.advert-wrap{max-width:860px;margin:0 auto;padding:28px 24px;}
+.advert-hero{
+  background:linear-gradient(135deg,var(--forest),var(--deep));
+  border-radius:18px;padding:28px 32px;color:#fff;
+  margin-bottom:22px;position:relative;overflow:hidden;
+}
+.ah-orb{position:absolute;border-radius:50%;background:rgba(62,207,110,.07);}
+.ah-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mint);margin-bottom:8px;position:relative;z-index:1;}
+.ah-title{font-family:'Nunito',sans-serif;font-size:24px;font-weight:900;margin-bottom:5px;letter-spacing:-.3px;position:relative;z-index:1;}
+.ah-sub{font-size:13px;opacity:.7;position:relative;z-index:1;}
+
+.ai-builder{background:var(--white);border-radius:14px;border:1px solid var(--border);overflow:hidden;margin-bottom:16px;}
+.aib-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.aib-title{font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.2px;flex:1;}
+.aib-step{font-size:11px;font-weight:700;color:var(--muted);}
+
+.question-grid{padding:20px;display:flex;flex-direction:column;gap:16px;}
+.q-item{display:flex;flex-direction:column;gap:7px;}
+.q-label{font-size:13px;font-weight:700;color:var(--ink);}
+.q-hint{font-size:11.5px;color:var(--muted);margin-top:-3px;}
+.q-options{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px;}
+.q-opt{padding:7px 14px;border-radius:20px;font-size:12.5px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--muted);transition:all .14s;}
+.q-opt.on{background:var(--forest);border-color:var(--forest);color:var(--white);}
+.q-opt:hover:not(.on){border-color:var(--forest);color:var(--forest);}
+
+.generate-btn{
+  width:100%;background:linear-gradient(135deg,var(--forest),var(--deep));
+  color:#fff;border:none;padding:14px;border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:9px;
+  margin-top:4px;
+}
+.generate-btn:hover{opacity:.9;}
+
+/* AI output */
+.ai-output{background:var(--white);border-radius:14px;border:1.5px solid var(--mint);overflow:hidden;display:none;}
+.ai-output.visible{display:block;animation:fadeIn .4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.ao-head{padding:14px 18px;background:var(--mint-p);border-bottom:1px solid var(--mint);display:flex;align-items:center;justify-content:space-between;}
+.ao-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--deep);display:flex;align-items:center;gap:7px;}
+.ao-actions{display:flex;gap:7px;}
+.ao-btn{padding:6px 13px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border:1.5px solid var(--mint);background:var(--white);color:var(--deep);transition:all .14s;}
+.ao-btn:hover{background:var(--mint);color:var(--forest);}
+.ao-btn.primary{background:var(--mint);color:var(--forest);border-color:var(--mint);}
+.ao-body{padding:24px 26px;}
+.advert-content{font-size:13.5px;color:var(--ink);line-height:1.8;}
+.advert-content h2{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;color:var(--forest);margin-bottom:8px;letter-spacing:-.2px;}
+.advert-content h3{font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:var(--ink);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.5px;font-size:11px;color:var(--muted);}
+.advert-content p{margin-bottom:12px;color:var(--body);}
+.advert-content ul{padding-left:20px;margin-bottom:12px;}
+.advert-content ul li{margin-bottom:5px;color:var(--body);}
+.advert-content .highlight{background:var(--mint-p);border-left:3px solid var(--mint);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;font-style:italic;color:var(--deep);}
+
+/* generating animation */
+.generating{display:none;padding:40px 32px;text-align:center;background:var(--mist);border-radius:16px;margin:24px;border:1px solid var(--border);}
+.generating.visible{display:block;}
+.gen-dots{display:flex;justify-content:center;gap:8px;margin-bottom:16px;}
+.gen-dot{width:12px;height:12px;border-radius:50%;background:var(--mint);animation:bounce .8s ease infinite;}
+.gen-dot:nth-child(2){animation-delay:.15s;}
+.gen-dot:nth-child(3){animation-delay:.3s;}
+@keyframes bounce{0%,80%,100%{transform:scale(.8);opacity:.5}40%{transform:scale(1.2);opacity:1}}
+.gen-text{font-size:14px;color:var(--body);font-weight:600;margin-bottom:4px;}
+.gen-subtext{font-size:12px;color:var(--muted);}
+
+/* ══ MODALS ══ */
+.overlay{position:fixed;inset:0;background:rgba(10,26,16,.5);z-index:800;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.overlay.on{display:flex;}
+.modal{background:var(--white);border-radius:18px;padding:28px;width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:var(--sl);animation:mIn .22s ease;}
+@keyframes mIn{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal::-webkit-scrollbar{width:3px;}
+.modal::-webkit-scrollbar-thumb{background:var(--border);}
+.m-ico{font-size:28px;margin-bottom:10px;}
+.m-title{font-family:'Nunito',sans-serif;font-size:18px;font-weight:900;color:var(--ink);margin-bottom:4px;letter-spacing:-.2px;}
+.m-sub{font-size:13px;color:var(--body);margin-bottom:18px;line-height:1.6;}
+.m-acts{display:flex;gap:7px;}
+.btn-out{background:var(--white);color:var(--body);border:1.5px solid var(--border);padding:11px 16px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;}
+.btn-out:hover{border-color:var(--mint);color:var(--ink);}
+
+/* ══ AUTH SCREEN ══ */
+#auth-screen{position:fixed;inset:0;background:#0d2b1f;display:flex;align-items:center;justify-content:center;z-index:2000;flex-direction:column;}
+.auth-card{background:#163d2c;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:36px 40px;width:460px;max-width:90vw;}
+.auth-logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:32px;color:#f0ede6;margin-bottom:6px;text-align:center;}
+.auth-logo span{color:#3ecf6e;}
+.auth-tagline{text-align:center;font-size:13px;color:rgba(240,237,230,0.4);margin-bottom:28px;}
+.auth-tabs{display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.08);}
+.auth-tab{flex:1;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:rgba(240,237,230,0.4);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;}
+.auth-tab.active{color:#3ecf6e;border-bottom-color:#3ecf6e;}
+.auth-form{display:flex;flex-direction:column;gap:14px;}
+.auth-form-group{display:flex;flex-direction:column;gap:6px;}
+.auth-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:rgba(240,237,230,0.35);}
+.auth-input{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:11px 14px;color:#f0ede6;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.15s;}
+.auth-input:focus{border-color:#3ecf6e;}
+.auth-input option{background:#163d2c;}
+.auth-btn{background:#3ecf6e;color:#0d2b1f;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;margin-top:4px;transition:opacity 0.15s;}
+.auth-btn:hover{opacity:0.88;}
+.auth-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.auth-error{background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:#f87171;display:none;}
+.auth-error.show{display:block;}
+.auth-note{text-align:center;font-size:12px;color:rgba(240,237,230,0.35);margin-top:8px;line-height:1.5;}
+.auth-loading{display:inline-block;width:14px;height:14px;border:2px solid rgba(13,43,31,0.3);border-top-color:#0d2b1f;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Claim practice search */
+.practice-search-result{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px 14px;cursor:pointer;transition:border-color 0.15s;margin-bottom:6px;}
+.practice-search-result:hover{border-color:#3ecf6e;}
+.practice-search-result.selected{border-color:#3ecf6e;background:rgba(62,207,110,0.08);}
+.psr-name{font-size:13px;font-weight:700;color:#f0ede6;margin-bottom:2px;}
+.psr-addr{font-size:11px;color:rgba(240,237,230,0.4);}
+.psr-list{max-height:200px;overflow-y:auto;margin-top:8px;}
+.psr-list::-webkit-scrollbar{width:3px;}
+.psr-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);}
+</style>
+</head>
+<body>
+
+<!-- ══ AUTH SCREEN ══ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">vet<span>si</span></div>
+    <div class="auth-tagline">Practice Portal — for hospital managers</div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('signin')">Sign in</div>
+      <div class="auth-tab" onclick="switchAuthTab('signup')">Register practice</div>
+    </div>
+
+    <!-- SIGN IN -->
+    <div id="signin-form" class="auth-form">
+      <div class="auth-form-group">
+        <label class="auth-label">Email</label>
+        <input class="auth-input" id="signin-email" type="email" placeholder="your@practice.com">
+      </div>
+      <div class="auth-form-group">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="signin-password" type="password" placeholder="Your password">
+      </div>
+      <div class="auth-error" id="signin-error"></div>
+      <button class="auth-btn" id="signin-btn" onclick="handleSignIn()">Sign in to dashboard</button>
+      <div class="auth-note">New practice? <span style="color:#3ecf6e;cursor:pointer;" onclick="switchAuthTab('signup')">Register here →</span></div>
+    </div>
+
+    <!-- SIGN UP -->
+    <div id="signup-form" class="auth-form" style="display:none">
+      <div class="auth-form-group">
+        <label class="auth-label">Your email</label>
+        <input class="auth-input" id="signup-email" type="email" placeholder="manager@practice.com">
+      </div>
+      <div class="auth-form-group">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="signup-password" type="password" placeholder="At least 8 characters">
+      </div>
+      <div class="auth-form-group">
+        <label class="auth-label">Find your practice</label>
+        <input class="auth-input" id="practice-search" type="text" placeholder="Start typing your practice name…" oninput="searchPractices()">
+        <div class="psr-list" id="practice-results"></div>
+        <div id="selected-practice-display" style="display:none;margin-top:6px;padding:10px 12px;background:rgba(62,207,110,0.1);border:1px solid rgba(62,207,110,0.3);border-radius:8px;font-size:13px;color:#3ecf6e;font-weight:600;"></div>
+      </div>
+      <div class="auth-error" id="signup-error"></div>
+      <button class="auth-btn" id="signup-btn" onclick="handleSignUp()">Register my practice</button>
+      <div class="auth-note">By registering you agree to our Terms of Service. Your first candidate enquiry is free.</div>
+    </div>
+  </div>
+</div>
+
+<div class="shell" id="main-app" style="display:none">
+
+<!-- ████ SIDEBAR ████ -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-word">vet<em>si</em></div>
+    <div class="sb-logo-tag">Practice Portal</div>
+    <div class="sb-logo-badge">
+      <span id="sidebar-logo-badge">🏥 Your Practice</span>
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-sec">Dashboard</div>
+    <button class="sbn on" id="nb-Overview" onclick="showPane('Overview')"><span class="sbn-ico">📊</span>Overview</button>
+    <button class="sbn" id="nb-Candidates" onclick="showPane('Candidates')"><span class="sbn-ico">👥</span>Candidates<span class="sbn-badge">7</span></button>
+    <div class="sb-sec">Your Practice</div>
+    <button class="sbn" id="nb-Practice" onclick="showPane('Practice','profile')"><span class="sbn-ico">🏥</span>My Practice</button>
+    <button class="sbn" id="nb-Advert" onclick="showPane('Advert')"><span class="sbn-ico">✨</span>AI Job Advert</button>
+    <div class="sb-sec">Account</div>
+    <button class="sbn" onclick="toast('⚙️ Settings coming soon')"><span class="sbn-ico">⚙️</span>Settings</button>
+    <button class="sbn" onclick="handleSignOut()"><span class="sbn-ico">🚪</span>Sign out</button>
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-practice" onclick="showPane('Practice','profile')">
+      <div class="sb-pico">🏛️</div>
+      <div>
+        <div class="sb-pname" id="sidebar-practice-name">Your Practice</div>
+        <div class="sb-prole" id="sidebar-user-email">Practice Manager</div>
+      </div>
+    </div>
+    <div class="sb-upgrade" onclick="toast('🚀 Founding member access active!')">
+      <span style="font-size:20px">⭐</span>
+      <div>
+        <div class="sb-upgrade-text">Founding Member</div>
+        <div class="sb-upgrade-sub">First enquiry free</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ████ MAIN ████ -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topTitle">Practice Overview</div>
+    <div class="topbar-right">
+      <div class="notif-wrap">
+        <div class="notif-btn" id="notif-btn" onclick="toggleNotifs()">🔔<div class="notif-dot" id="notif-dot" style="display:none"></div></div>
+        <div class="notif-dropdown" id="notif-dropdown">
+          <div class="notif-dd-head">
+            <div class="notif-dd-title">Notifications</div>
+            <div class="notif-dd-clear" onclick="markAllRead()">Mark all read</div>
+          </div>
+          <div id="notif-list"><div class="notif-empty">No notifications yet</div></div>
+        </div>
+      </div>
+      <div class="tb-av" id="topbar-avatar">?</div>
+    </div>
+  </div>
+
+  <div class="body">
+
+  <!-- ══ OVERVIEW ══ -->
+  <div class="pane on" id="pOverview">
+    <div class="dash-wrap">
+
+      <!-- Welcome banner -->
+      <div class="welcome-banner">
+        <div class="wb-orb" style="width:300px;height:300px;top:-100px;right:120px;"></div>
+        <div class="wb-orb" style="width:200px;height:200px;bottom:-80px;right:-40px;opacity:.6"></div>
+        <div class="wb-left">
+          <div class="wb-eyebrow">Good to see you</div>
+          <div class="wb-title" id="welcome-title">Welcome back 👋</div>
+          <div class="wb-sub" id="welcome-sub">Loading your candidate activity…</div>
+          <div class="wb-actions">
+            <button class="btn-mint" onclick="showPane('Candidates')">View Candidates →</button>
+            <button class="btn-ghost-w" onclick="showPane('Advert')">✨ Generate Job Advert</button>
+          </div>
+        </div>
+        <div class="wb-right">
+          <div class="stat-bubble">
+            <div class="sb-val" id="stat-total">0</div>
+            <div class="sb-lbl">Active Enquiries</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-card kc-green">
+          <div class="kpi-label">Total Enquiries</div>
+          <div class="kpi-val" id="kpi-total">0</div>
+          <div class="kpi-change up" id="kpi-total-sub">No enquiries yet</div>
+        </div>
+        <div class="kpi-card kc-amber">
+          <div class="kpi-label">Interested / Shortlisted</div>
+          <div class="kpi-val" id="kpi-interested">0</div>
+          <div class="kpi-change neutral">Marked as interested</div>
+        </div>
+        <div class="kpi-card kc-blue">
+          <div class="kpi-label">Interviews Scheduled</div>
+          <div class="kpi-val" id="kpi-interview">0</div>
+          <div class="kpi-change up">Awaiting confirmation</div>
+        </div>
+        <div class="kpi-card kc-purple">
+          <div class="kpi-label">Profile Views (30 days)</div>
+          <div class="kpi-val">—</div>
+          <div class="kpi-change up">Coming soon</div>
+        </div>
+      </div>
+
+      <!-- Dashboard grid -->
+      <div class="dash-grid">
+
+        <!-- Recent activity -->
+        <div class="dash-card">
+          <div class="dc-head">
+            <div class="dc-title">Recent Activity</div>
+            <div class="dc-link" onclick="showPane('Candidates')">See all →</div>
+          </div>
+          <div class="dc-body" id="recent-activity-list">
+            <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">Loading activity…</div>
+          </div>
+        </div>
+
+        <!-- Pipeline -->
+        <div class="dash-card">
+          <div class="dc-head">
+            <div class="dc-title">Candidate Pipeline</div>
+            <div class="dc-link" onclick="showPane('Candidates')">Manage →</div>
+          </div>
+          <div class="dc-body">
+            <div class="pipe-mini" style="margin-bottom:14px">
+              <div class="pm-col" style="background:var(--blue-p)"><div class="pm-val" style="color:var(--blue)" id="pipe-new">0</div><div class="pm-lbl">New</div></div>
+              <div class="pm-col" style="background:var(--hire-p)"><div class="pm-val" style="color:var(--hire)" id="pipe-interested">0</div><div class="pm-lbl">Interested</div></div>
+              <div class="pm-col" style="background:var(--purp-p)"><div class="pm-val" style="color:var(--purple)" id="pipe-interview">0</div><div class="pm-lbl">Interview</div></div>
+              <div class="pm-col" style="background:var(--mist)"><div class="pm-val" style="color:var(--muted)" id="pipe-archived">0</div><div class="pm-lbl">Archived</div></div>
+            </div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px">Latest candidates</div>
+            <div id="overview-latest-candidates">
+              <div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">No candidates yet</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile completeness -->
+        <div class="dash-card">
+          <div class="dc-head">
+            <div class="dc-title">Profile Completeness</div>
+            <div class="dc-link" onclick="showPane('Practice','profile')">Edit →</div>
+          </div>
+          <div class="dc-body">
+            <div style="font-size:13px;color:var(--body);margin-bottom:14px;line-height:1.5">A complete profile gets <strong>3× more candidate views</strong> than an auto-generated listing.</div>
+            <div class="prog-item">
+              <div class="prog-label"><span>Basic info</span><span class="prog-pct" id="comp-basic-pct">—</span></div>
+              <div class="prog-bar"><div class="prog-fill" id="comp-basic-bar" style="width:0%"></div></div>
+            </div>
+            <div class="prog-item">
+              <div class="prog-label"><span>Practice description</span><span class="prog-pct" id="comp-bio-pct">—</span></div>
+              <div class="prog-bar"><div class="prog-fill" id="comp-bio-bar" style="width:0%"></div></div>
+            </div>
+            <div class="prog-item">
+              <div class="prog-label"><span>Salary & benefits</span><span class="prog-pct" id="comp-salary-pct">—</span></div>
+              <div class="prog-bar"><div class="prog-fill" id="comp-salary-bar" style="width:0%"></div></div>
+            </div>
+            <div class="prog-item">
+              <div class="prog-label"><span>Team culture info</span><span class="prog-pct" id="comp-culture-pct">—</span></div>
+              <div class="prog-bar"><div class="prog-fill" id="comp-culture-bar" style="width:0%"></div></div>
+            </div>
+            <div class="prog-item">
+              <div class="prog-label"><span>Job advert</span><span class="prog-pct" id="comp-advert-pct">—</span></div>
+              <div class="prog-bar"><div class="prog-fill" id="comp-advert-bar" style="width:0%"></div></div>
+            </div>
+            <button class="btn-mint" style="width:100%;justify-content:center;margin-top:14px" onclick="showPane('Practice','profile')">Complete your profile →</button>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="dash-card">
+          <div class="dc-head"><div class="dc-title">Quick Actions</div></div>
+          <div class="dc-body" style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:13px;background:var(--mist);border-radius:10px;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--mint)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showPane('Advert')">
+              <span style="font-size:22px">✨</span>
+              <div><div style="font-weight:700;font-size:13px;color:var(--ink)">Generate AI Job Advert</div><div style="font-size:11.5px;color:var(--muted)">Answer 6 questions, get a polished advert</div></div>
+            </div>
+            <div style="padding:13px;background:var(--mist);border-radius:10px;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--mint)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showPane('Practice','hiring')">
+              <span style="font-size:22px">🟢</span>
+              <div><div style="font-weight:700;font-size:13px;color:var(--ink)">Mark as Actively Hiring</div><div style="font-size:11.5px;color:var(--muted)">Stand out with a green badge on the map</div></div>
+            </div>
+            <div style="padding:13px;background:var(--mist);border-radius:10px;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--mint)'" onmouseout="this.style.borderColor='var(--border)'" onclick="showPane('Candidates')">
+              <span style="font-size:22px">📅</span>
+              <div><div style="font-weight:700;font-size:13px;color:var(--ink)">Schedule an Interview</div><div style="font-size:11.5px;color:var(--muted)">Send a calendar invite to a candidate</div></div>
+            </div>
+            <div style="padding:13px;background:var(--mist);border-radius:10px;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--mint)'" onmouseout="this.style.borderColor='var(--border)'" onclick="toast('📋 Profile preview opened in new tab')">
+              <span style="font-size:22px">👁️</span>
+              <div><div style="font-weight:700;font-size:13px;color:var(--ink)">Preview Your Listing</div><div style="font-size:11.5px;color:var(--muted)">See what candidates see on the map</div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CANDIDATES ══ -->
+  <div class="pane flex" id="pCandidates">
+    <div class="cand-list-col">
+      <div class="clc-head">
+        <div class="clc-title">Candidates</div>
+        <div class="pipe-tabs">
+          <div class="ptab on" data-stage="all" onclick="selPipe(this)"><span>📥 All</span><span class="pcnt" id="cnt-all">0</span></div>
+          <div class="ptab" data-stage="enquiry" onclick="selPipe(this)"><span>💬 Enquiries</span><span class="pcnt" id="cnt-enquiry">0</span></div>
+          <div class="ptab" data-stage="new" onclick="selPipe(this)"><span>🆕 New</span><span class="pcnt" id="cnt-new">0</span></div>
+          <div class="ptab" data-stage="interested" onclick="selPipe(this)"><span>⭐ Interested</span><span class="pcnt" id="cnt-interested">0</span></div>
+          <div class="ptab" data-stage="interview" onclick="selPipe(this)"><span>📅 Interview</span><span class="pcnt" id="cnt-interview">0</span></div>
+          <div class="ptab" data-stage="archived" onclick="selPipe(this)"><span>🗄 Archived</span><span class="pcnt" id="cnt-archived">0</span></div>
+        </div>
+      </div>
+      <div class="clist" id="candList"></div>
+    </div>
+    <div class="cand-detail">
+      <div class="cd-head">
+        <div class="cd-title" id="cdTitle">Candidates</div>
+        <div class="cd-acts" id="cd-acts" style="display:none">
+          <button class="btn-act neg" id="act-archive" onclick="moveCandidate('archived')">🗄 Archive</button>
+          <button class="btn-act" id="act-new" onclick="moveCandidate('new')">🆕 New</button>
+          <button class="btn-act" id="act-interview" onclick="moveCandidate('interview')">📅 Interview</button>
+          <button class="btn-act pos" id="act-interested" onclick="moveCandidate('interested')">⭐ Interested</button>
+        </div>
+      </div>
+      <div class="cd-body" id="cdBody"></div>
+    </div>
+  </div>
+
+  <!-- ══ MY PRACTICE ══ -->
+  <div class="pane" id="pPractice">
+    <div class="prac-wrap">
+      <div class="prac-header">
+        <div class="prac-title-block">
+          <div class="prac-title">My Practice</div>
+          <div class="prac-sub">This is how candidates see you on vetsi. Fill it in fully to stand out.</div>
+        </div>
+        <div class="prac-status">
+          <div class="status-pill sp-live">🟢 Actively Hiring</div>
+        </div>
+      </div>
+
+      <!-- Preview card -->
+      <div class="preview-card">
+        <div class="preview-label">Live Preview — How candidates see you</div>
+        <div class="preview-name" id="preview-practice-name">Your Practice</div>
+        <div class="preview-loc" id="preview-practice-loc">📍 Complete your practice profile</div>
+        <div class="preview-pills" id="preview-pills">
+          <div class="pp" id="preview-pill-hiring" style="display:none">● Actively Hiring</div>
+          <div class="pp" id="preview-pill-rcvs" style="display:none">RCVS Accredited</div>
+          <div class="pp" id="preview-pill-salary" style="display:none"></div>
+        </div>
+        <div class="preview-stats">
+          <div class="ps"><div class="ps-val">—</div><div class="ps-lbl">Views this month</div></div>
+          <div class="ps"><div class="ps-val" id="preview-enquiries">0</div><div class="ps-lbl">Enquiries received</div></div>
+          <div class="ps"><div class="ps-val" id="preview-salary">—</div><div class="ps-lbl">Salary shown</div></div>
+        </div>
+      </div>
+
+      <!-- Sub-tabs -->
+      <div class="prac-tabs">
+        <button class="prac-tab on" onclick="showPracTab(this,'profile')">Practice Info</button>
+        <button class="prac-tab" onclick="showPracTab(this,'team')">Team & Culture</button>
+        <button class="prac-tab" onclick="showPracTab(this,'branding')">Photos & Branding</button>
+      </div>
+
+      <!-- PROFILE TAB -->
+      <!-- PRACTICE INFO TAB -->
+      <div id="pracTab-profile">
+        <div class="form-section">
+          <div class="fs-head">
+            <div class="fs-title">Basic Information</div>
+          </div>
+          <div class="fs-body">
+            <div class="form-row">
+              <div class="form-group">
+                <div class="form-label">Practice Name</div>
+                <input class="form-input" id="form-practice-name" value="">
+              </div>
+              <div class="form-group">
+                <div class="form-label">Practice Type</div>
+                <select class="form-select">
+                  <option>Referral Hospital</option>
+                  <option selected>General Practice</option>
+                  <option>Emergency & Critical Care</option>
+                  <option>Mixed Practice</option>
+                  <option>Equine</option>
+                  <option>Feline Only</option>
+                  <option>Charity</option>
+                  <option>Teaching Hospital</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <div class="form-label">Address</div>
+                <input class="form-input" id="form-practice-address" value="">
+              </div>
+              <div class="form-group">
+                <div class="form-label">Website</div>
+                <input class="form-input" id="form-practice-website" value="">
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <div class="form-label">About Your Practice</div>
+                <div class="form-hint">This is your chance to sell the practice. Be honest, specific, and personal. What makes you different?</div>
+                <textarea class="form-textarea" id="form-practice-bio" style="min-height:120px" placeholder="e.g. We're an independent small animal practice in the heart of York, known for exceptional client relationships and a genuinely supportive team..."></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <div class="form-label">Number of vets on team</div>
+                <select class="form-select" id="form-vet-count">
+                  <option>1–5</option>
+                  <option>6–10</option>
+                  <option selected>11–25</option>
+                  <option>26–50</option>
+                  <option>50+</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <div class="form-label">RCVS Accreditation</div>
+                <select class="form-select">
+                  <option selected>RCVS Accredited (General Practice)</option>
+                  <option>RCVS Accredited (Hospital)</option>
+                  <option>Not RCVS accredited</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="fs-head">
+            <div class="fs-title">Specialties & Services</div>
+          </div>
+          <div class="fs-body">
+            <div class="form-group">
+              <div class="form-label">Select all that apply</div>
+              <div class="tag-cloud">
+                <div class="tag-pill on">Small Animal</div>
+                <div class="tag-pill on">Surgery</div>
+                <div class="tag-pill on">Internal Medicine</div>
+                <div class="tag-pill on">Oncology</div>
+                <div class="tag-pill on">Emergency & Critical Care</div>
+                <div class="tag-pill on">Imaging / Radiology</div>
+                <div class="tag-pill on">Neurology</div>
+                <div class="tag-pill">Cardiology</div>
+                <div class="tag-pill">Dentistry</div>
+                <div class="tag-pill">Dermatology</div>
+                <div class="tag-pill">Ophthalmology</div>
+                <div class="tag-pill">Exotic Animals</div>
+                <div class="tag-pill">Equine</div>
+                <div class="tag-pill">Farm / Large Animal</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="fs-head">
+            <div class="fs-title">Salary & Benefits</div>
+          </div>
+          <div class="fs-body">
+            <div class="form-row">
+              <div class="form-group">
+                <div class="form-label">Salary range — from (£)</div>
+                <input class="form-input" id="form-salary-from" value="" type="number" placeholder="e.g. 45000">
+              </div>
+              <div class="form-group">
+                <div class="form-label">Salary range — to (£)</div>
+                <input class="form-input" id="form-salary-to" value="" type="number" placeholder="e.g. 65000">
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">Benefits — select all that apply</div>
+              <div class="tag-cloud">
+                <div class="tag-pill on">CPD budget included</div>
+                <div class="tag-pill on">4-day week available</div>
+                <div class="tag-pill on">RCVS fees paid</div>
+                <div class="tag-pill on">BVA membership paid</div>
+                <div class="tag-pill on">Pension contribution</div>
+                <div class="tag-pill">Private healthcare</div>
+                <div class="tag-pill on">Mentorship programme</div>
+                <div class="tag-pill">Relocation assistance</div>
+                <div class="tag-pill">Flexible hours</div>
+                <div class="tag-pill on">No out-of-hours on-call</div>
+                <div class="tag-pill">Profit share</div>
+                <div class="tag-pill">Clinical lead pathway</div>
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <div class="form-label">CPD budget per year (£)</div>
+                <input class="form-input" id="form-cpd-budget" placeholder="e.g. 1500">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HIRING PREFERENCES — moved here from own tab -->
+        <div class="form-section" id="hiring-prefs-section">
+          <div class="fs-head">
+            <div class="fs-title">Hiring Status</div>
+          </div>
+          <div class="fs-body">
+            <div style="margin-bottom:16px">
+              <div class="form-label" style="margin-bottom:10px">Are you currently hiring?</div>
+              <div class="q-options" id="hiring-status-opts">
+                <div class="q-opt" onclick="setHiringStatus(this, true)">🟢 Actively hiring</div>
+                <div class="q-opt" onclick="setHiringStatus(this, false)">⚫ Not currently hiring</div>
+              </div>
+              <div style="font-size:12px;color:var(--muted);margin-top:8px;">When set to actively hiring, your practice gets a highlighted badge on the map and candidate list.</div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <div class="form-label">Contract type</div>
+                <select class="form-select" id="form-contract-type">
+                  <option selected>Permanent</option>
+                  <option>Locum / Fixed term</option>
+                  <option>Both</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <div class="form-label">Hours preference</div>
+                <select class="form-select" id="form-hours">
+                  <option>Full time only</option>
+                  <option selected>Full or part time considered</option>
+                  <option>Part time preferred</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top:8px">
+              <div class="toggle-row"><div><div class="tr-label">Show salary range to candidates</div><div class="tr-sub">Transparency increases qualified enquiries</div></div><div class="tog on" id="tog-salary" onclick="this.classList.toggle('on')"><div class="tog-k"></div></div></div>
+              <div class="toggle-row"><div><div class="tr-label">Accept expressions of interest when not hiring</div><div class="tr-sub">Build a talent pool for future roles</div></div><div class="tog on" id="tog-interest" onclick="this.classList.toggle('on')"><div class="tog-k"></div></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      </div>
+
+      <!-- TEAM & CULTURE TAB -->
+      <div id="pracTab-team" style="display:none">
+        <div class="form-section">
+          <div class="fs-head">
+            <div class="fs-title">Team & Culture</div>
+          </div>
+          <div class="fs-body">
+            <div class="form-row full">
+              <div class="form-group">
+                <div class="form-label">Describe your team culture</div>
+                <div class="form-hint">Vets care deeply about culture. Be honest — the right candidate will appreciate it.</div>
+                <textarea class="form-textarea" id="form-culture" style="min-height:110px" placeholder="e.g. We're a collaborative team of 12 vets and 20 nurses. We genuinely support each other — new grads are treated with the same respect as 20-year specialists. We do team lunches every Friday and our clinical lead has an open door policy…"></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <div class="form-label">Work-life balance approach</div>
+                <textarea class="form-textarea" id="form-wlb" placeholder="e.g. We operate a genuine 4-day week for all vets. No on-call — we use a dedicated OOH partner…"></textarea>
+              </div>
+              <div class="form-group">
+                <div class="form-label">Out-of-hours arrangement</div>
+                <textarea class="form-textarea" id="form-ooh" placeholder="e.g. All OOH is covered by a local emergency clinic — you will never be called out of hours…"></textarea>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="form-label">How would your team describe working here?</div>
+              <div class="form-hint">Select up to 5</div>
+              <div class="tag-cloud" id="team-vibe-cloud">
+                <div class="tag-pill" onclick="this.classList.toggle('on')">Collaborative</div>
+                <div class="tag-pill" onclick="this.classList.toggle('on')">Supportive</div>
+                <div class="tag-pill" onclick="this.classList.toggle('on')">Fast-paced</div>
+                <div class="tag-pill" onclick="this.classList.toggle('on')">Academic</div>
+                <div class="tag-pill" onclick="this.classList.toggle('on')">Innovative</div>
+                <div class="tag-pill" onclick="this.classList.toggle('on')">Community-focused</div>
+                <div class="tag-pill" onclick="this.classList.toggle('on')">Family-like</div>
+                <div class="tag-pill" onclick="this.classList.toggle('on')">High-performing</div>
+                <div class="tag-pill" onclick="this.classList.toggle('on')">Laid-back</div>
+                <div class="tag-pill" onclick="this.classList.toggle('on')">Specialist</div>
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <div class="form-label">Notable equipment or facilities</div>
+                <div class="form-hint">Anything that makes your clinical environment stand out</div>
+                <textarea class="form-textarea" id="form-equipment" placeholder="e.g. Digital X-ray, in-house lab, ultrasound, laparoscopy suite, separate cat ward…"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BRANDING TAB -->
+      <div id="pracTab-branding" style="display:none">
+        <div class="form-section">
+          <div class="fs-head">
+            <div class="fs-title">Photos & Branding</div>
+            <span class="fs-badge" style="background:var(--amber-p);color:#92400e">40% Complete</span>
+          </div>
+          <div class="fs-body">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
+              <div style="aspect-ratio:4/3;background:var(--mint-p);border:2px dashed var(--mint);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s" onclick="toast('📷 Photo upload coming soon')">
+                <span style="font-size:28px;margin-bottom:6px">🏛️</span>
+                <span style="font-size:11px;font-weight:600;color:var(--deep)">Practice exterior</span>
+                <span style="font-size:10px;color:var(--muted)">Click to upload</span>
+              </div>
+              <div style="aspect-ratio:4/3;background:var(--mist);border:2px dashed var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s" onclick="toast('📷 Photo upload coming soon')">
+                <span style="font-size:24px;margin-bottom:6px">➕</span>
+                <span style="font-size:11px;font-weight:600;color:var(--muted)">Clinical space</span>
+                <span style="font-size:10px;color:var(--light)">Click to upload</span>
+              </div>
+              <div style="aspect-ratio:4/3;background:var(--mist);border:2px dashed var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s" onclick="toast('📷 Photo upload coming soon')">
+                <span style="font-size:24px;margin-bottom:6px">➕</span>
+                <span style="font-size:11px;font-weight:600;color:var(--muted)">Your team</span>
+                <span style="font-size:10px;color:var(--light)">Click to upload</span>
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <div class="form-label">Practice logo URL</div>
+                <input class="form-input" placeholder="https://...">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <div class="save-hint">💡 Complete your profile so the AI advert writer has accurate information to work with</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-mint" onclick="savePracticeProfile()">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ AI JOB ADVERT ══ -->
+  <div class="pane" id="pAdvert">
+    <div class="advert-wrap">
+      <div class="advert-hero">
+        <div class="ah-orb" style="width:250px;height:250px;top:-80px;right:-60px;"></div>
+        <div class="ah-orb" style="width:160px;height:160px;bottom:-50px;right:140px;opacity:.5"></div>
+        <div class="ah-label">AI-Powered · vetsi</div>
+        <div class="ah-title">Generate Your Job Advert ✨</div>
+        <div class="ah-sub">Answer 6 quick questions and our AI will write a compelling, honest job advert for you — the kind that attracts the right vets, not just any vets.</div>
+      </div>
+
+      <div class="ai-builder">
+        <div class="aib-head">
+          <div class="aib-title">Tell us about the role</div>
+          <div class="aib-step">5 questions · ~3 minutes</div>
+        </div>
+        <div class="question-grid">
+
+          <div class="q-item">
+            <div class="q-label">1. What type of role is this?</div>
+            <div class="q-options" id="q-role-type">
+              <div class="q-opt on" onclick="selOpt(this)">Small Animal</div>
+              <div class="q-opt" onclick="selOpt(this)">Large Animal</div>
+              <div class="q-opt" onclick="selOpt(this)">Mixed</div>
+              <div class="q-opt" onclick="selOpt(this)">Equine</div>
+              <div class="q-opt" onclick="selOpt(this)">Exotics</div>
+              <div class="q-opt" onclick="selOpt(this)">Emergency</div>
+              <div class="q-opt" onclick="selOpt(this)">Specialist</div>
+            </div>
+          </div>
+
+          <div class="q-item">
+            <div class="q-label">2. What experience level are you open to?</div>
+            <div class="q-options" id="q-experience">
+              <div class="q-opt on" onclick="selOpt(this)">New graduates welcome</div>
+              <div class="q-opt" onclick="selOpt(this)">2+ years experience</div>
+              <div class="q-opt" onclick="selOpt(this)">5+ years experience</div>
+              <div class="q-opt" onclick="selOpt(this)">Any level considered</div>
+            </div>
+          </div>
+
+          <div class="q-item">
+            <div class="q-label">3. What are the standout things about working here?</div>
+            <div class="q-hint">Choose up to 3 — these will be the focus of your advert</div>
+            <div class="q-options multi-select" id="q-standout">
+              <div class="q-opt" onclick="selMulti(this,3)">World-class caseload</div>
+              <div class="q-opt" onclick="selMulti(this,3)">4-day week</div>
+              <div class="q-opt" onclick="selMulti(this,3)">Incredible team culture</div>
+              <div class="q-opt" onclick="selMulti(this,3)">No out-of-hours on-call</div>
+              <div class="q-opt" onclick="selMulti(this,3)">Exceptional CPD support</div>
+              <div class="q-opt" onclick="selMulti(this,3)">Path to clinical leadership</div>
+              <div class="q-opt" onclick="selMulti(this,3)">Independent practice</div>
+              <div class="q-opt" onclick="selMulti(this,3)">Competitive salary</div>
+              <div class="q-opt" onclick="selMulti(this,3)">Flexible working</div>
+              <div class="q-opt" onclick="selMulti(this,3)">State-of-the-art equipment</div>
+              <div class="q-opt" onclick="selMulti(this,3)">Relocation support</div>
+              <div class="q-opt" onclick="selMulti(this,3)">Certificate / specialist support</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+              <input type="text" id="standout-custom-input" class="form-input" placeholder="Add your own…" style="flex:1;font-size:13px;padding:8px 12px;">
+              <button onclick="addCustomStandout()" style="background:var(--mint);color:var(--forest);border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">+ Add</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;" id="standout-count">0 of 3 selected</div>
+          </div>
+
+          <div class="q-item">
+            <div class="q-label">4. How would you describe the team vibe?</div>
+            <div class="q-options" id="q-vibe">
+              <div class="q-opt on" onclick="selOpt(this)">Warm & supportive</div>
+              <div class="q-opt" onclick="selOpt(this)">Academic & specialist</div>
+              <div class="q-opt" onclick="selOpt(this)">High-performing & ambitious</div>
+              <div class="q-opt" onclick="selOpt(this)">Relaxed & community-focused</div>
+            </div>
+          </div>
+
+          <div class="q-item">
+            <div class="q-label">5. Anything extra you want the advert to mention?</div>
+            <div class="q-hint">Optional — e.g. specific equipment, relocation support, parking, on-site accommodation…</div>
+            <textarea class="form-textarea" id="extraInfo" placeholder="e.g. We recently installed a digital X-ray suite and have a £1,500 annual CPD budget per vet. Free parking and 10 mins from the train station..." style="min-height:80px"></textarea>
+          </div>
+
+          <button class="generate-btn" onclick="generateAdvert()">
+            <span style="font-size:18px">✨</span>
+            Generate My Job Advert with AI
+          </button>
+        </div>
+      </div>
+
+      <!-- Generating state -->
+      <div class="generating" id="generatingState">
+        <div class="gen-dots">
+          <div class="gen-dot"></div>
+          <div class="gen-dot"></div>
+          <div class="gen-dot"></div>
+        </div>
+        <div class="gen-text" id="genText">Reading your practice profile…</div>
+        <div class="gen-subtext">This takes about 10–15 seconds</div>
+      </div>
+
+      <!-- AI Output -->
+      <div class="ai-output" id="aiOutput">
+        <div class="ao-head">
+          <div class="ao-label">
+            <span style="font-size:16px">✨</span>
+            AI-Generated Job Advert
+          </div>
+          <div class="ao-actions">
+            <button class="ao-btn" onclick="generateAdvert()">↺ Regenerate</button>
+            <button class="ao-btn primary" id="publish-btn" onclick="publishAdvert()">🚀 Publish to vetsi</button>
+          </div>
+        </div>
+        <!-- Review hint -->
+        <div style="display:flex;gap:12px;align-items:flex-start;background:#fef9ec;border:1px solid #f4b942;border-radius:10px;padding:14px 16px;margin:0 24px 16px;">
+          <span style="font-size:22px;flex-shrink:0;">💬</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:4px;">Review before publishing</div>
+            <div style="font-size:12px;color:#b45309;line-height:1.6;">The AI has written this based on your practice profile and answers. Read it through and edit anything that doesn't sound like you — change salary figures, add specific equipment, remove anything inaccurate. It's your advert, make it yours.</div>
+          </div>
+        </div>
+        <div class="ao-body">
+          <textarea id="advertContent" style="width:100%;min-height:520px;background:#f8faf9;border:1px solid var(--border);border-radius:10px;padding:20px;font-size:14px;line-height:1.75;color:var(--ink);font-family:'DM Sans',sans-serif;resize:vertical;outline:none;box-shadow:inset 0 1px 4px rgba(0,0,0,0.04);" placeholder="Your AI-generated advert will appear here…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  </div><!-- /body -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- TOAST -->
+<div class="toast" id="toastEl"><span id="toastTxt"></span></div>
+
+<script>
+// ══════════════════════════════
+// PANEL NAVIGATION
+// ══════════════════════════════
+function showPane(name, subTab) {
+  document.querySelectorAll('.pane').forEach(p => { p.classList.remove('on'); p.classList.remove('flex'); });
+  document.querySelectorAll('.sbn').forEach(b => b.classList.remove('on'));
+  const pane = document.getElementById('p' + name);
+  if (!pane) return;
+  pane.classList.add('on');
+  if (name === 'Candidates') pane.classList.add('flex');
+  const nb = document.getElementById('nb-' + name);
+  if (nb) nb.classList.add('on');
+  const titles = { Overview:'Practice Overview', Candidates:'Candidates', Practice:'My Practice', Advert:'AI Job Advert Generator' };
+  document.getElementById('topTitle').textContent = titles[name] || name;
+  if (subTab) { setTimeout(() => showPracTab(null, subTab), 50); }
+  pane.scrollTop = 0;
+}
+
+// ══════════════════════════════
+// PRACTICE SUB-TABS
+// ══════════════════════════════
+function showPracTab(el, tabId) {
+  document.querySelectorAll('.prac-tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('[id^="pracTab-"]').forEach(t => t.style.display = 'none');
+  if (el) el.classList.add('on');
+  else {
+    document.querySelectorAll('.prac-tab').forEach(t => {
+      if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(tabId)) t.classList.add('on');
+    });
+  }
+  const tab = document.getElementById('pracTab-' + tabId);
+  if (tab) tab.style.display = 'block';
+}
+
+// tag pills toggle
+document.querySelectorAll('.tag-pill').forEach(p => p.addEventListener('click', () => p.classList.toggle('on')));
+
+// ══════════════════════════════
+// CANDIDATES
+// ══════════════════════════════
+function buildCandList() {
+  const el = document.getElementById('candList');
+  el.innerHTML = '';
+  candidates.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'ccard' + (i === 0 ? ' on' : '');
+    d.innerHTML = `
+      <div class="cc-top">
+        <div class="cc-av" style="background:${c.col}">${c.ini}</div>
+        <div><div class="cc-name">${c.name}</div><div class="cc-role">${c.role}</div></div>
+      </div>
+      <div class="cc-tags">
+        ${c.tags.map(t => `<span class="tag t-t">${t}</span>`).join('')}
+        <span class="tag ${c.status}">${c.statusTxt}</span>
+      </div>`;
+    d.onclick = () => { document.querySelectorAll('.ccard').forEach(x => x.classList.remove('on')); d.classList.add('on'); loadCand(i); };
+    el.appendChild(d);
+  });
+  loadCand(0);
+}
+
+// fix tag class names
+const tagMap = {'st-i':'t-h','st-n':'t-t','st-p':'t-p','st-a':'t-m'};
+
+function buildCandListFixed() {
+  const el = document.getElementById('candList');
+  el.innerHTML = '';
+  const allInterests = window.realInterests || [];
+
+  // Filter by active pipeline stage
+  const interests = activePipeStage === 'all'
+    ? allInterests
+    : allInterests.filter(r => {
+        const stage = r.pipeline_stage || 'new';
+        return stage === activePipeStage;
+      });
+
+  if (allInterests.length === 0) {
+    el.innerHTML = `
+      <div style="padding:32px 20px;text-align:center;color:#6b8878;">
+        <div style="font-size:36px;margin-bottom:12px;">🐾</div>
+        <div style="font-weight:700;font-size:14px;color:#2c4035;margin-bottom:6px;">No candidates yet</div>
+        <div style="font-size:12px;line-height:1.6;">When vets express interest in your practice on vetsi, they'll appear here.</div>
+      </div>`;
+    document.getElementById('cdTitle').textContent = 'Candidates';
+    document.getElementById('cd-acts').style.display = 'none';
+    document.getElementById('cdBody').innerHTML = `
+      <div style="padding:48px 32px;text-align:center;color:#6b8878;">
+        <div style="font-size:48px;margin-bottom:16px;">👥</div>
+        <div style="font-weight:700;font-size:16px;color:#2c4035;margin-bottom:8px;">Your candidate pipeline will appear here</div>
+        <div style="font-size:13px;line-height:1.7;max-width:360px;margin:0 auto;">Complete your practice profile so vets can find you on the map — then candidates who express interest will show up here.</div>
+      </div>`;
+    updateDashboardStats();
+    return;
+  }
+
+  if (interests.length === 0) {
+    el.innerHTML = `<div style="padding:24px 20px;text-align:center;color:#6b8878;font-size:13px;">No candidates in this stage yet.</div>`;
+    document.getElementById('cdTitle').textContent = 'Candidates';
+    document.getElementById('cd-acts').style.display = 'none';
+    document.getElementById('cdBody').innerHTML = '';
+    updateDashboardStats();
+    return;
+  }
+
+  interests.forEach((row, i) => {
+    const c = row.candidates;
+    if (!c) return;
+
+    const privacyMode = row.privacy_mode;
+    const isAnon = privacyMode === 'anon';
+    const stage = row.pipeline_stage || 'new';
+    const isEnquiry = stage === 'enquiry';
+    const stageLabel = {
+      new: '🆕 New',
+      interested: '⭐ Interested',
+      interview: '📅 Interview',
+      archived: '🗄 Archived',
+      enquiry: '💬 Enquiry'
+    }[stage] || '🆕 New';
+    const stageBg = isEnquiry ? 't-p' : 't-h';
+    const displayName = (isAnon || isEnquiry) ? 'Anonymous Vet' : `${c.first_name||''} ${c.last_name||''}`.trim() || 'Unnamed Vet';
+    const initials = (isAnon || isEnquiry) ? '?' : ((c.first_name||'')[0]||'') + ((c.last_name||'')[0]||'');
+    const role = [c.specialty, c.years_exp].filter(Boolean).join(' · ') || 'Veterinary Professional';
+    const date = new Date(row.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+
+    const d = document.createElement('div');
+    d.className = 'ccard' + (i === 0 ? ' on' : '');
+    d.innerHTML = `
+      <div class="cc-top">
+        <div class="cc-av" style="background:linear-gradient(135deg,#3ecf6e,#1a8a45);${(isAnon||isEnquiry)?'filter:blur(4px)':''}">${initials||'?'}</div>
+        <div>
+          <div class="cc-name" ${(isAnon||isEnquiry)?'style="filter:blur(8px)"':''}>${displayName}</div>
+          <div class="cc-role">${role}</div>
+        </div>
+      </div>
+      <div class="cc-tags">
+        <span class="tag ${stageBg}" style="font-size:10px">${stageLabel}</span>
+        <span class="tag t-t" style="font-size:10px">📅 ${date}</span>
+      </div>`;
+    d.onclick = () => {
+      document.querySelectorAll('.ccard').forEach(x => x.classList.remove('on'));
+      d.classList.add('on');
+      activeInterestRow = row;
+      document.getElementById('cd-acts').style.display = 'flex';
+      updateActionButtons(row);
+      loadRealCand(row);
+    };
+    el.appendChild(d);
+  });
+
+  // Auto-select first
+  activeInterestRow = interests[0];
+  document.getElementById('cd-acts').style.display = 'flex';
+  updateActionButtons(interests[0]);
+  if (interests[0]) loadRealCand(interests[0]);
+  updateDashboardStats();
+}
+
+function loadRealCand(row) {
+  const c = row.candidates;
+  const privacyMode = row.privacy_mode;
+  const isAnon = privacyMode === 'anon';
+  const isFull = privacyMode === 'full';
+  const isSemi = privacyMode === 'semi';
+  const date = new Date(row.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+
+  const displayName = (isAnon || (row.pipeline_stage === 'enquiry')) ? 'Anonymous Vet' : `${c.first_name||''} ${c.last_name||''}`.trim() || 'Unnamed Vet';
+  const initials = (isAnon || (row.pipeline_stage === 'enquiry')) ? '?' : ((c.first_name||'')[0]||'') + ((c.last_name||'')[0]||'');
+  const privacyLabel = { anon:'👻 Anonymous', semi:'🔓 Semi-visible', full:'✅ Full profile' }[privacyMode];
+  const isEnquiry = (row.pipeline_stage || 'new') === 'enquiry';
+  const stageDisplay = isEnquiry
+    ? '<span class="ch-tag" style="background:rgba(139,92,246,0.2);border-color:rgba(139,92,246,0.3);color:#c4b5fd;">💬 Anonymous Enquiry</span>'
+    : `<span class="ch-tag">${privacyLabel}</span>`;
+
+  document.getElementById('cdTitle').textContent = isEnquiry ? 'Anonymous Enquiry' : displayName;
+  document.getElementById('cdBody').innerHTML = `
+    <div class="cand-hero">
+      <div class="ch-av" style="background:linear-gradient(135deg,#3ecf6e,#1a8a45);filter:blur(8px)">?</div>
+      <div style="flex:1">
+        <div class="ch-name" style="filter:${isEnquiry ? 'blur(10px)' : (isAnon ? 'blur(10px)' : 'none')}">${isEnquiry ? 'Anonymous Vet' : displayName}</div>
+        <div class="ch-sub">${c.specialty||'Veterinary Professional'} · ${c.years_exp||'Experience not specified'}</div>
+        <div class="ch-tags">
+          ${stageDisplay}
+          <span class="ch-tag">📅 ${isEnquiry ? 'Messaged' : 'Interest expressed'} ${date}</span>
+          ${!isEnquiry && c.salary_target ? `<span class="ch-tag">💷 £${c.salary_target}k target</span>` : ''}
+          ${!isEnquiry && c.schedule ? `<span class="ch-tag">🗓 ${c.schedule}</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="detail-grid">
+      <div class="dc">
+        <div class="dch">What you can see</div>
+        <div class="ir"><span class="il">Specialty</span><span class="iv">${c.specialty||'—'}</span></div>
+        <div class="ir"><span class="il">Experience</span><span class="iv">${c.years_exp||'—'}</span></div>
+        ${!isEnquiry ? `
+        <div class="ir"><span class="il">Schedule pref</span><span class="iv">${c.schedule||'—'}</span></div>
+        <div class="ir"><span class="il">Salary target</span><span class="iv">${c.salary_target ? '£'+c.salary_target+'k' : '—'}</span></div>
+        ` : ''}
+      </div>
+      <div class="dc">
+        <div class="dch">${isEnquiry ? 'Identity' : 'Contact details'}</div>
+        ${isEnquiry ? `
+          <div style="padding:14px;background:#f7faf8;border-radius:8px;font-size:13px;color:#6b8878;text-align:center;line-height:1.6;">
+            🔒 This vet messaged you anonymously. Their name, bio and contact details are hidden until they choose to express interest.
+          </div>
+        ` : isFull ? `
+          <div class="ir"><span class="il">Full name</span><span class="iv">${displayName}</span></div>
+          <div class="ir"><span class="il">Qualifications</span><span class="iv">${c.qualifications||'—'}</span></div>
+          <div style="margin-top:8px;padding:10px 12px;background:#edfaf3;border-radius:8px;font-size:12px;color:#1a3d2b;">
+            ✅ This candidate shared their full profile with you.
+          </div>
+        ` : `
+          <div style="padding:14px;background:#f7faf8;border-radius:8px;font-size:13px;color:#6b8878;text-align:center;line-height:1.6;">
+            🔒 ${isAnon
+              ? 'This vet is browsing anonymously. Their name and contact details are hidden.'
+              : 'Name and bio visible. Contact details not yet shared.'}
+          </div>
+        `}
+      </div>
+      ${!isEnquiry && (isSemi || isFull) && c.bio ? `
+      <div class="dc full">
+        <div class="dch">About this vet</div>
+        <p style="font-size:13px;color:var(--body);line-height:1.75">${c.bio}</p>
+      </div>` : ''}
+    </div>
+    <div class="msg-mini" id="msg-panel-${c.id}">
+      <div class="mm-title">Conversation</div>
+      <div id="msg-history-${c.id}" style="min-height:40px;"></div>
+      <div class="mm-input">
+        <textarea class="mm-ta" id="msg-input-${c.id}" placeholder="Write a message…" rows="1"></textarea>
+        <button class="mm-send" onclick="sendHospitalMessage('${c.id}')">➤</button>
+      </div>
+    </div>`;
+
+  // Load conversation history — use currentHospital.id directly
+  loadConversation(c.id, currentHospital.id);
+}
+
+let activePipeStage = 'all';
+let activeInterestRow = null;
+
+// ══════════════════════════════
+// MESSAGING — HOSPITAL SIDE
+// ══════════════════════════════
+async function loadConversation(candidateId, hospitalId) {
+  const histEl = document.getElementById('msg-history-' + candidateId);
+  if (!histEl) return;
+
+  const { data, error } = await sb.from('messages')
+    .select('*')
+    .eq('candidate_id', candidateId)
+    .eq('hospital_id', hospitalId)
+    .order('created_at', { ascending: true });
+
+  if (error) { console.error('loadConversation error:', error.message); return; }
+
+  if (!data || data.length === 0) {
+    histEl.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">No messages yet — send the first one.</div>';
+    return;
+  }
+
+  histEl.innerHTML = data.map(m => {
+    const isOut = m.sender_type === 'hospital';
+    const time = new Date(m.created_at).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) + ' · ' +
+      new Date(m.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+    return `
+      <div class="mm-bub ${isOut ? 'out' : 'in'}">${m.body}</div>
+      <div class="mm-t ${isOut ? 'right' : ''}">${isOut ? 'You · ' + time : 'Candidate · ' + time}</div>`;
+  }).join('');
+
+  // Scroll to bottom
+  const panel = document.getElementById('msg-panel-' + candidateId);
+  if (panel) panel.scrollTop = panel.scrollHeight;
+}
+
+async function sendHospitalMessage(candidateId) {
+  const hospitalId = currentHospital?.id;
+  if (!hospitalId) { toast('⚠️ No hospital linked to your account'); return; }
+
+  const input = document.getElementById('msg-input-' + candidateId);
+  const body = input?.value.trim();
+  if (!body) return;
+
+  input.value = '';
+  input.disabled = true;
+
+  const { error } = await sb.from('messages').insert({
+    candidate_id: candidateId,
+    hospital_id: hospitalId,
+    sender_type: 'hospital',
+    body,
+  });
+
+  input.disabled = false;
+
+  if (error) {
+    toast('⚠️ Message failed — ' + error.message);
+    input.value = body;
+    return;
+  }
+
+  await loadConversation(candidateId, hospitalId);
+  toast('✅ Message sent');
+}
+
+function updateActionButtons(row) {
+  if (!row) return;
+  const stage = row.pipeline_stage || 'new';
+  const isEnquiry = stage === 'enquiry';
+
+  const archiveBtn    = document.getElementById('act-archive');
+  const newBtn        = document.getElementById('act-new');
+  const interviewBtn  = document.getElementById('act-interview');
+  const interestedBtn = document.getElementById('act-interested');
+
+  if (isEnquiry) {
+    // Enquiry: primary action is "Add to pipeline", archive available
+    if (archiveBtn)    { archiveBtn.textContent = '🗄 Archive'; archiveBtn.className = 'btn-act neg'; }
+    if (newBtn)        { newBtn.textContent = '➕ Add to pipeline'; newBtn.className = 'btn-act pos'; }
+    if (interviewBtn)  { interviewBtn.style.display = 'none'; }
+    if (interestedBtn) { interestedBtn.style.display = 'none'; }
+  } else {
+    // Normal pipeline candidate
+    if (archiveBtn)    { archiveBtn.textContent = '🗄 Archive'; archiveBtn.className = 'btn-act neg'; archiveBtn.style.display = ''; }
+    if (newBtn)        { newBtn.textContent = '🆕 New'; newBtn.className = 'btn-act'; newBtn.style.display = ''; }
+    if (interviewBtn)  { interviewBtn.textContent = '📅 Interview'; interviewBtn.style.display = ''; }
+    if (interestedBtn) { interestedBtn.textContent = '⭐ Interested'; interestedBtn.style.display = ''; }
+  }
+}
+
+function selPipe(el) {
+  document.querySelectorAll('.ptab').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+  activePipeStage = el.dataset.stage || 'all';
+  buildCandListFixed();
+}
+
+async function moveCandidate(stage) {
+  if (!activeInterestRow) return;
+
+  // Optimistically update local data immediately
+  activeInterestRow.pipeline_stage = stage;
+  if (window.realInterests) {
+    const row = window.realInterests.find(r => r.id === activeInterestRow.id);
+    if (row) row.pipeline_stage = stage;
+  }
+
+  buildCandListFixed();
+  updateDashboardStats();
+  toast(`✅ Moved to ${stage.charAt(0).toUpperCase() + stage.slice(1)}`);
+
+  // If this is a message-only enquiry (no interests row yet), create one
+  if (activeInterestRow._messageOnly) {
+    const { error } = await sb.from('interests').insert({
+      candidate_id: activeInterestRow.candidates.id,
+      hospital_id: currentHospital.id,
+      privacy_mode: 'anon',
+      pipeline_stage: stage,
+    });
+    if (error) {
+      toast('⚠️ Could not save — ' + error.message);
+      console.error(error.message);
+      await loadCandidateInterests();
+      buildCandListFixed();
+      updateDashboardStats();
+    } else {
+      // Reload to get the real interests row with proper ID
+      await loadCandidateInterests();
+      buildCandListFixed();
+      updateDashboardStats();
+    }
+    return;
+  }
+
+  // Normal interests row — just update it
+  const { error } = await sb.from('interests')
+    .update({ pipeline_stage: stage })
+    .eq('id', activeInterestRow.id);
+
+  if (error) {
+    toast('⚠️ Could not save — please try again');
+    console.error(error.message);
+    await loadCandidateInterests();
+    buildCandListFixed();
+    updateDashboardStats();
+  }
+}
+
+// ══════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════
+let notifOpen = false;
+
+function toggleNotifs() {
+  notifOpen = !notifOpen;
+  document.getElementById('notif-dropdown').classList.toggle('open', notifOpen);
+  if (notifOpen) renderNotifications();
+  // Close when clicking outside
+  if (notifOpen) {
+    setTimeout(() => {
+      document.addEventListener('click', closeNotifsOutside, { once: true });
+    }, 10);
+  }
+}
+
+function closeNotifsOutside(e) {
+  const wrap = document.querySelector('.notif-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    notifOpen = false;
+    document.getElementById('notif-dropdown').classList.remove('open');
+  }
+}
+
+function renderNotifications() {
+  const interests = window.realInterests || [];
+  const list = document.getElementById('notif-list');
+  if (interests.length === 0) {
+    list.innerHTML = '<div class="notif-empty">No notifications yet — when vets express interest or message your practice, you\'ll see them here.</div>';
+    return;
+  }
+  list.innerHTML = interests.map(row => {
+    const c = row.candidates;
+    const isAnon = row.privacy_mode === 'anon';
+    const isEnquiry = row.pipeline_stage === 'enquiry';
+    const name = (isAnon || isEnquiry) ? 'An anonymous vet' : `${c?.first_name||''} ${c?.last_name||''}`.trim() || 'A vet';
+    const spec = c?.specialty || 'veterinary professional';
+    const date = new Date(row.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+
+    const ico = isEnquiry ? '💬' : '🐾';
+    const title = isEnquiry
+      ? `${name} sent you a message`
+      : `${name} expressed interest`;
+    const sub = isEnquiry
+      ? `${spec} · Anonymous enquiry · ${date}`
+      : `${spec} · Shared ${{ anon:'anonymously', semi:'semi-visible profile', full:'full contact details' }[row.privacy_mode]} · ${date}`;
+
+    return `<div class="notif-item unread" onclick="showPane('Candidates');toggleNotifs();">
+      <div class="notif-ico">${ico}</div>
+      <div class="notif-text">
+        <div class="notif-title">${title}</div>
+        <div class="notif-sub">${sub}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function markAllRead() {
+  document.querySelectorAll('.notif-item').forEach(i => i.classList.remove('unread'));
+  document.getElementById('notif-dot').style.display = 'none';
+  toggleNotifs();
+}
+
+// ══════════════════════════════
+// DASHBOARD STATS UPDATE
+// ══════════════════════════════
+function updateDashboardStats() {
+  const interests = window.realInterests || [];
+  const total = interests.length;
+  const enquiryCount = interests.filter(r => r.pipeline_stage === 'enquiry').length;
+  const interestedCount = interests.filter(r => r.pipeline_stage === 'interested').length;
+  const interviewCount = interests.filter(r => r.pipeline_stage === 'interview').length;
+  const newCount = interests.filter(r => !r.pipeline_stage || r.pipeline_stage === 'new').length;
+  const archivedCount = interests.filter(r => r.pipeline_stage === 'archived').length;
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('stat-total', total);
+  set('kpi-total', total);
+  set('preview-enquiries', total);
+  set('kpi-interested', interestedCount);
+  set('kpi-interview', interviewCount);
+  set('kpi-total-sub', total > 0
+    ? `${newCount} new · ${enquiryCount} enquir${enquiryCount === 1 ? 'y' : 'ies'} · ${interestedCount} shortlisted`
+    : 'No activity yet');
+
+  set('cnt-all', total);
+  set('cnt-enquiry', enquiryCount);
+  set('cnt-new', newCount);
+  set('cnt-interested', interestedCount);
+  set('cnt-interview', interviewCount);
+  set('cnt-archived', archivedCount);
+
+  // Update overview pipeline mini counts
+  set('pipe-new', newCount);
+  set('pipe-interested', interestedCount);
+  set('pipe-interview', interviewCount);
+  set('pipe-archived', archivedCount);
+
+  // Populate recent activity from real interests
+  const activityEl = document.getElementById('recent-activity-list');
+  if (activityEl) {
+    if (interests.length === 0) {
+      activityEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">No activity yet. Complete your profile to attract vets.</div>';
+    } else {
+      const stageIcon = { new:'🆕', interested:'⭐', interview:'📅', archived:'🗄️', enquiry:'💬' };
+      const stageColour = { new:'blue', interested:'green', interview:'amber', archived:'muted', enquiry:'purple' };
+      const recent = [...interests].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+      activityEl.innerHTML = recent.map(r => {
+        const c = r.candidates || {};
+        const name = r._messageOnly
+          ? 'Anonymous vet'
+          : (c.first_name && c.last_name ? `${c.first_name} ${c.last_name}` : c.specialty ? `${c.specialty} vet` : 'A vet');
+        const stage = r.pipeline_stage || 'new';
+        const ico = stageIcon[stage] || '👤';
+        const col = stageColour[stage] || 'green';
+        const timeAgo = timeAgoStr(r.created_at);
+        const action = stage === 'enquiry' ? 'sent a message' : 'expressed interest';
+        return `<div class="act-item">
+          <div class="act-ico ${col}">${ico}</div>
+          <div class="act-text">
+            <div class="act-main"><strong>${name}</strong> ${action}${c.specialty ? ` — ${c.specialty}` : ''}${c.years_exp ? `, ${c.years_exp}` : ''}</div>
+            <div class="act-time">${timeAgo}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Populate overview latest candidates
+  const latestEl = document.getElementById('overview-latest-candidates');
+  if (latestEl) {
+    if (interests.length === 0) {
+      latestEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">No candidates yet</div>';
+    } else {
+      const avatarColours = ['#3ecf6e','#3b82f6','#8b5cf6','#f59e0b','#ef4444'];
+      latestEl.innerHTML = interests.slice(0, 4).map((r, i) => {
+        const c = r.candidates || {};
+        const name = r._messageOnly ? 'Anonymous' : (c.first_name && c.last_name ? `${c.first_name} ${c.last_name}` : 'Vet');
+        const initials = name === 'Anonymous' ? '?' : name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+        const col = avatarColours[i % avatarColours.length];
+        const stage = r.pipeline_stage || 'new';
+        const stageLabel = { new:'🆕 New', interested:'⭐ Interested', interview:'📅 Interview', archived:'Archived', enquiry:'💬 Enquiry' }[stage] || stage;
+        return `<div class="act-item" style="cursor:pointer" onclick="showPane('Candidates')">
+          <div class="act-ico" style="background:${col};border-radius:50%"><span style="font-size:11px;font-weight:800;color:#0d2b1f">${initials}</span></div>
+          <div class="act-text">
+            <div class="act-main"><strong>${name}</strong>${c.specialty ? ` · ${c.specialty}` : ''}${c.years_exp ? ` · ${c.years_exp}` : ''}</div>
+            <div class="act-time"><span style="font-size:10px">${stageLabel}</span></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  const badge = document.querySelector('#nb-Candidates .sbn-badge');
+  if (badge) badge.textContent = total;
+
+  const sub = document.getElementById('welcome-sub');
+  if (sub) {
+    if (total === 0) {
+      sub.textContent = 'No activity yet. Complete your practice profile to attract vets.';
+    } else {
+      const parts = [];
+      if (newCount > 0) parts.push(`${newCount} new interest${newCount > 1 ? 's' : ''}`);
+      if (enquiryCount > 0) parts.push(`${enquiryCount} anonymous enquir${enquiryCount > 1 ? 'ies' : 'y'}`);
+      if (interestedCount > 0) parts.push(`${interestedCount} shortlisted`);
+      sub.textContent = parts.join(' · ') + '.';
+    }
+  }
+
+  const dot = document.getElementById('notif-dot');
+  if (dot) dot.style.display = total > 0 ? 'block' : 'none';
+}
+
+// ══════════════════════════════
+// AI ADVERT GENERATOR
+// ══════════════════════════════
+function selOpt(el) {
+  const group = el.closest('.q-options');
+  group.querySelectorAll('.q-opt').forEach(o => o.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function selMulti(el, max) {
+  const group = el.closest('.q-options');
+  const selected = group.querySelectorAll('.q-opt.on');
+  if (el.classList.contains('on')) {
+    el.classList.remove('on');
+  } else {
+    if (selected.length >= max) {
+      toast(`⚠️ You can only choose ${max} standout things`);
+      return;
+    }
+    el.classList.add('on');
+  }
+  const count = group.querySelectorAll('.q-opt.on').length;
+  document.getElementById('standout-count').textContent = `${count} of ${max} selected`;
+}
+
+function addCustomStandout() {
+  const input = document.getElementById('standout-custom-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const group = document.getElementById('q-standout');
+  const selected = group.querySelectorAll('.q-opt.on');
+  const newOpt = document.createElement('div');
+  newOpt.className = 'q-opt' + (selected.length < 3 ? ' on' : '');
+  newOpt.textContent = val;
+  newOpt.onclick = function() { selMulti(this, 3); };
+  group.appendChild(newOpt);
+  input.value = '';
+  const count = group.querySelectorAll('.q-opt.on').length;
+  document.getElementById('standout-count').textContent = `${count} of 3 selected`;
+}
+
+let currentHiringStatus = false;
+
+function setHiringStatus(el, isHiring) {
+  const opts = document.getElementById('hiring-status-opts');
+  opts.querySelectorAll('.q-opt').forEach(o => o.classList.remove('on'));
+  el.classList.add('on');
+  currentHiringStatus = isHiring;
+  // Save immediately to Supabase
+  if (currentHospital) {
+    sb.from('hospitals').update({ is_hiring: isHiring }).eq('id', currentHospital.id)
+      .then(({ error }) => {
+        if (!error) toast(isHiring ? '🟢 Marked as actively hiring — your listing is now highlighted on the map!' : '⚫ Hiring status updated');
+        else toast('⚠️ Could not update hiring status');
+      });
+  }
+}
+
+async function savePracticeProfile() {
+  if (!currentHospital) { toast('⚠️ No practice linked to your account'); return; }
+
+  const btn = document.querySelector('.btn-mint[onclick="savePracticeProfile()"]');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+
+  const salaryFrom = parseInt(document.getElementById('form-salary-from')?.value) || null;
+  const salaryTo = parseInt(document.getElementById('form-salary-to')?.value) || null;
+  const salaryRange = salaryFrom && salaryTo ? `£${salaryFrom.toLocaleString()}–£${salaryTo.toLocaleString()}` : null;
+
+  const updates = {
+    name: document.getElementById('form-practice-name')?.value || currentHospital.name,
+    address: document.getElementById('form-practice-address')?.value || currentHospital.address,
+    website: document.getElementById('form-practice-website')?.value || null,
+    practice_bio: document.getElementById('form-practice-bio')?.value || null,
+    culture_values: document.getElementById('form-culture')?.value || null,
+    equipment_highlights: document.getElementById('form-equipment')?.value || null,
+    work_life_balance: document.getElementById('form-wlb')?.value || null,
+    out_of_hours: document.getElementById('form-ooh')?.value || null,
+    cpd_budget: document.getElementById('form-cpd-budget')?.value || null,
+    is_hiring: currentHiringStatus,
+  };
+  if (salaryRange) updates.salary_range = salaryRange;
+
+  const { error } = await sb.from('hospitals')
+    .update(updates)
+    .eq('id', currentHospital.id);
+
+  if (btn) { btn.textContent = 'Save changes'; btn.disabled = false; }
+
+  if (error) {
+    console.error('Save error:', error);
+    toast('⚠️ Could not save: ' + error.message);
+  } else {
+    // Update local currentHospital so values persist in session
+    Object.assign(currentHospital, updates);
+    updateProfileCompleteness();
+    toast('✅ Profile saved successfully!');
+  }
+}
+
+async function publishAdvert() {
+  if (!currentHospital) return;
+  const btn = document.getElementById('publish-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Publishing…';
+
+  const advertText = document.getElementById('advertContent').value.trim();
+  if (!advertText) { toast('⚠️ No advert to publish'); btn.disabled = false; btn.textContent = '🚀 Publish to vetsi'; return; }
+
+  // Convert plain text to HTML for candidate display
+  const advertHTML = advertText
+    .split('\n')
+    .map(line => {
+      line = line.trim();
+      if (!line) return '';
+      if (line.startsWith('## ')) return `<h2>${line.slice(3)}</h2>`;
+      if (/^[A-Z\s&/•]+$/.test(line) && line.length > 3 && line.length < 60) return `<h3>${line}</h3>`;
+      if (line.startsWith('•') || line.startsWith('-')) return `<li>${line.replace(/^[•\-]\s*/, '')}</li>`;
+      if (line.startsWith('"') && line.endsWith('"')) return `<div class="highlight">${line.slice(1, -1)}</div>`;
+      return `<p>${line}</p>`;
+    })
+    .join('\n')
+    .replace(/(<li>.*?<\/li>\n?)+/gs, match => `<ul>${match}</ul>`);
+
+  // Delete existing advert for this hospital then insert fresh — avoids upsert constraint issues
+  await sb.from('job_adverts').delete().eq('hospital_id', currentHospital.id);
+
+  const { error } = await sb.from('job_adverts').insert({
+    hospital_id: currentHospital.id,
+    advert_html: advertHTML,
+    published: true,
+    updated_at: new Date().toISOString()
+  });
+
+  await sb.from('hospitals').update({ is_hiring: true, advert_published: true }).eq('id', currentHospital.id);
+
+  if (error) {
+    console.error('Publish error:', error);
+    toast('⚠️ Could not publish: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = '🚀 Publish to vetsi';
+  } else {
+    // Show persistent success state
+    btn.textContent = '✅ Live on vetsi';
+    btn.style.background = 'var(--hire)';
+    toast('🚀 Advert published! Vets can now see your job listing on the map.');
+    currentHiringStatus = true;
+    const hiringOpts = document.querySelectorAll('#hiring-status-opts .q-opt');
+    hiringOpts.forEach(o => o.classList.remove('on'));
+    if (hiringOpts[0]) hiringOpts[0].classList.add('on');
+    // Reset button after 5 seconds
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = '🚀 Publish to vetsi';
+      btn.style.background = '';
+    }, 5000);
+  }
+}
+
+const genMessages = [
+  'Reading your practice profile…',
+  'Considering your role type and culture…',
+  'Crafting your opening hook…',
+  'Writing the role description…',
+  'Polishing benefits and package…',
+  'Finalising your advert…'
+];
+
+async function generateAdvert() {
+  // Validate standout selections
+  const standoutEls = document.querySelectorAll('#q-standout .q-opt.on');
+  if (standoutEls.length === 0) {
+    toast('⚠️ Please select at least one standout thing about your practice');
+    return;
+  }
+
+  // Disable the generate button and show loading state
+  const generateBtn = document.querySelector('.generate-btn');
+  if (generateBtn) {
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<span style="font-size:18px">⏳</span> Generating…';
+    generateBtn.style.opacity = '0.7';
+  }
+
+  document.getElementById('aiOutput').classList.remove('visible');
+  const gen = document.getElementById('generatingState');
+  gen.classList.add('visible');
+  gen.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  let step = 0;
+  const interval = setInterval(() => {
+    if (step < genMessages.length) {
+      document.getElementById('genText').textContent = genMessages[step++];
+    }
+  }, 1500);
+
+  // Gather all inputs
+  const roleType = document.querySelector('#q-role-type .q-opt.on')?.textContent || 'Small Animal';
+  const experience = document.querySelector('#q-experience .q-opt.on')?.textContent || 'Any level';
+  const standoutThings = [...standoutEls].map(e => e.textContent).join(', ');
+  const vibe = document.querySelector('#q-vibe .q-opt.on')?.textContent || 'Warm & supportive';
+  const extra = document.getElementById('extraInfo').value.trim();
+
+  // Gather practice profile
+  const practiceName = currentHospital?.name || document.getElementById('form-practice-name')?.value || 'Our Practice';
+  const practiceLocation = currentHospital?.address || '';
+  const practiceBio = document.getElementById('form-practice-bio')?.value || currentHospital?.practice_bio || '';
+  const cultureDesc = document.getElementById('form-culture')?.value || currentHospital?.culture_values || '';
+  const equipment = document.getElementById('form-equipment')?.value || currentHospital?.equipment_highlights || '';
+  const wlb = document.getElementById('form-wlb')?.value || currentHospital?.work_life_balance || '';
+  const ooh = document.getElementById('form-ooh')?.value || currentHospital?.out_of_hours || '';
+  const cpdBudget = document.getElementById('form-cpd-budget')?.value || currentHospital?.cpd_budget || '';
+  const salaryFrom = document.getElementById('form-salary-from')?.value || '';
+  const salaryTo = document.getElementById('form-salary-to')?.value || '';
+  const salaryStr = salaryFrom && salaryTo ? `£${parseInt(salaryFrom).toLocaleString()}–£${parseInt(salaryTo).toLocaleString()}` : 'Competitive, depending on experience';
+  const vetCount = document.getElementById('form-vet-count')?.value || '';
+  const benefits = [...document.querySelectorAll('#hiring-prefs-section .tag-pill.on')].map(e => e.textContent);
+  const teamVibeWords = [...document.querySelectorAll('#team-vibe-cloud .tag-pill.on')].map(e => e.textContent);
+
+  const prompt = `PRACTICE DETAILS:
+- Practice name: ${practiceName}
+- Location / address: ${practiceLocation}
+- About the practice: ${practiceBio || 'An independent UK veterinary practice'}
+- Number of vets: ${vetCount}
+- Salary range: ${salaryStr}
+- Benefits offered: ${benefits.length > 0 ? benefits.join(', ') : 'Standard benefits package'}
+${cultureDesc ? `- Team culture: ${cultureDesc}` : ''}
+${teamVibeWords.length > 0 ? `- Team described as: ${teamVibeWords.join(', ')}` : ''}
+${equipment ? `- Equipment and facilities: ${equipment}` : ''}
+${wlb ? `- Work-life balance / rota: ${wlb}` : ''}
+${ooh ? `- Out-of-hours arrangement: ${ooh}` : ''}
+${cpdBudget ? `- CPD budget: £${cpdBudget} per year` : ''}
+
+ROLE DETAILS:
+- Role type: ${roleType} Veterinary Surgeon
+- Experience level sought: ${experience}
+- Standout things about working here: ${standoutThings}
+- Team vibe: ${vibe}
+${extra ? `- Additional information: ${extra}` : ''}
+
+Write the job advert now.`;
+
+  try {
+    // Always call the Vercel function directly by full URL
+    // Replace YOUR-PROJECT below with your actual Vercel project name
+    const API_URL = 'https://vetsi.vercel.app/api/generate-advert';
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+
+    if (!response.ok) {
+      // If 404, proxy not deployed yet — give helpful message
+      if (response.status === 404) {
+        clearInterval(interval);
+        gen.classList.remove('visible');
+        toast('⚠️ AI writer requires Vercel deployment — see setup instructions');
+        // Show a sample advert so the UI is testable
+        const sampleText = `## ${roleType} Veterinary Surgeon — ${currentHospital?.name || 'Our Practice'}, ${currentHospital?.postcode || 'UK'}
+
+"${standoutThings} — this is what makes us different, and we think you'll feel the difference from day one."
+
+ABOUT THE ROLE
+We are looking for a ${roleType.toLowerCase()} veterinary surgeon to join our team. This role offers a genuinely varied caseload with strong clinical support and real opportunities to develop your career.
+
+WHY US?
+${standoutThings.split(',').map(s => `• ${s.trim()}`).join('\n')}
+
+THE PACKAGE
+• Salary: ${salaryStr}
+• ${experience}
+• No hidden surprises — what we say is what you get
+
+WHAT WE'RE LOOKING FOR
+• BVSc / BVetMed or equivalent, RCVS registered or eligible
+• ${experience}
+• A vet who wants to be part of a team, not just fill a rota slot
+
+Reach out through vetsi — we'd love to have an informal conversation before you commit to anything.`;
+        document.getElementById('advertContent').value = sampleText;
+        document.getElementById('aiOutput').classList.add('visible');
+        document.getElementById('aiOutput').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const advertText = data.text || '';
+
+    clearInterval(interval);
+    gen.classList.remove('visible');
+
+    // Reset generate button
+    if (generateBtn) {
+      generateBtn.disabled = false;
+      generateBtn.innerHTML = '<span style="font-size:18px">✨</span> Generate My Job Advert with AI';
+      generateBtn.style.opacity = '';
+    }
+
+    if (!advertText) { toast('⚠️ Could not generate advert — please try again'); return; }
+
+    const textarea = document.getElementById('advertContent');
+    textarea.value = advertText;
+    document.getElementById('aiOutput').classList.add('visible');
+    document.getElementById('aiOutput').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Save draft to Supabase (not yet published)
+    if (currentHospital) {
+      await sb.from('job_adverts').upsert({
+        hospital_id: currentHospital.id,
+        role_type: roleType,
+        experience_level: experience,
+        standout_things: [...standoutEls].map(e => e.textContent),
+        team_vibe: vibe,
+        extra_info: extra,
+        advert_html: advertText,
+        published: false
+      }, { onConflict: 'hospital_id' });
+    }
+
+  } catch (err) {
+    clearInterval(interval);
+    gen.classList.remove('visible');
+    // Reset generate button on error
+    if (generateBtn) {
+      generateBtn.disabled = false;
+      generateBtn.innerHTML = '<span style="font-size:18px">✨</span> Generate My Job Advert with AI';
+      generateBtn.style.opacity = '';
+    }
+    console.error('Advert generation failed:', err);
+    toast('⚠️ ' + (err.message || 'Generation failed — check your connection and try again'));
+  }
+}
+
+// ══════════════════════════════
+// UTILS
+// ══════════════════════════════
+let toastTmr;
+function updateProfileCompleteness() {
+  if (!currentHospital) return;
+  const h = currentHospital;
+
+  const setBar = (pctId, barId, pct) => {
+    const color = pct === 100 ? 'var(--mint)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
+    const el = document.getElementById(pctId);
+    const bar = document.getElementById(barId);
+    if (el) el.textContent = pct + '%';
+    if (bar) { bar.style.width = pct + '%'; bar.style.background = color; }
+  };
+
+  // Basic info — name, address, website
+  const basicScore = [h.name, h.address, h.website].filter(Boolean).length;
+  setBar('comp-basic-pct', 'comp-basic-bar', Math.round(basicScore / 3 * 100));
+
+  // Practice description — bio
+  setBar('comp-bio-pct', 'comp-bio-bar', h.practice_bio ? 100 : 0);
+
+  // Salary — salary_range
+  setBar('comp-salary-pct', 'comp-salary-bar', h.salary_range ? 100 : 0);
+
+  // Culture — culture_values or equipment or wlb
+  const cultureScore = [h.culture_values, h.equipment_highlights, h.work_life_balance].filter(Boolean).length;
+  setBar('comp-culture-pct', 'comp-culture-bar', Math.round(cultureScore / 3 * 100));
+
+  // Advert — advert_published
+  setBar('comp-advert-pct', 'comp-advert-bar', h.advert_published ? 100 : 0);
+}
+
+function timeAgoStr(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return mins <= 1 ? 'Just now' : `${mins} mins ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs === 1 ? '1 hour ago' : `${hrs} hours ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  return new Date(dateStr).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+}
+
+function toast(msg) {
+  const el = document.getElementById('toastEl');
+  document.getElementById('toastTxt').textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(() => el.classList.remove('on'), 3200);
+}
+
+// ══════════════════════════════
+// SUPABASE SETUP
+// ══════════════════════════════
+const SUPABASE_URL = 'https://lnruacfecwuvrlmyrwlr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxucnVhY2ZlY3d1dnJsbXlyd2xyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNDkyNzQsImV4cCI6MjA5MDkyNTI3NH0.CrkAKVr_dLTNUoyayclbOEFp6WGB0lxP8c0o0IiR5P8';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentHospital = null;
+let selectedPracticeId = null;
+let allPractices = [];
+
+// ══════════════════════════════
+// AUTH UI
+// ══════════════════════════════
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.auth-tab[onclick="switchAuthTab('${tab}')"]`).classList.add('active');
+  document.getElementById('signin-form').style.display = tab === 'signin' ? 'flex' : 'none';
+  document.getElementById('signup-form').style.display = tab === 'signup' ? 'flex' : 'none';
+}
+
+function setAuthLoading(form, loading) {
+  const btn = document.getElementById(form + '-btn');
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? '<span class="auth-loading"></span>Please wait…'
+    : (form === 'signin' ? 'Sign in to dashboard' : 'Register my practice');
+}
+
+function showAuthError(form, msg) {
+  const el = document.getElementById(form + '-error');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function clearAuthError(form) {
+  document.getElementById(form + '-error').classList.remove('show');
+}
+
+async function searchPractices() {
+  const q = document.getElementById('practice-search').value.trim();
+  const resultsEl = document.getElementById('practice-results');
+  if (q.length < 2) { resultsEl.innerHTML = ''; return; }
+
+  const { data } = await sb.from('hospitals')
+    .select('id, name, address, postcode')
+    .ilike('name', `%${q}%`)
+    .limit(6);
+
+  if (!data || data.length === 0) {
+    resultsEl.innerHTML = '<div style="padding:10px;font-size:12px;color:rgba(240,237,230,0.4);">No practices found — try a different spelling</div>';
+    return;
+  }
+
+  resultsEl.innerHTML = data.map(p => `
+    <div class="practice-search-result ${selectedPracticeId === p.id ? 'selected' : ''}"
+         onclick="selectPractice('${p.id}', '${p.name.replace(/'/g,"\\'")}', '${p.postcode}')">
+      <div class="psr-name">${p.name}</div>
+      <div class="psr-addr">${p.address}, ${p.postcode}</div>
+    </div>
+  `).join('');
+}
+
+function selectPractice(id, name, postcode) {
+  selectedPracticeId = id;
+  document.getElementById('selected-practice-display').style.display = 'block';
+  document.getElementById('selected-practice-display').textContent = '✓ ' + name + ' · ' + postcode;
+  document.getElementById('practice-results').innerHTML = '';
+  document.getElementById('practice-search').value = name;
+}
+
+async function handleSignIn() {
+  clearAuthError('signin');
+  const email = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value;
+  if (!email || !password) { showAuthError('signin', 'Please enter your email and password.'); return; }
+  setAuthLoading('signin', true);
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  setAuthLoading('signin', false);
+  if (error) { showAuthError('signin', error.message); return; }
+  await onSignedIn(data.user);
+}
+
+async function handleSignUp() {
+  clearAuthError('signup');
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  if (!email || !password) { showAuthError('signup', 'Please fill in all fields.'); return; }
+  if (password.length < 8) { showAuthError('signup', 'Password must be at least 8 characters.'); return; }
+  if (!selectedPracticeId) { showAuthError('signup', 'Please search for and select your practice.'); return; }
+
+  setAuthLoading('signup', true);
+  const { data, error } = await sb.auth.signUp({ email, password });
+  setAuthLoading('signup', false);
+  if (error) { showAuthError('signup', error.message); return; }
+
+  // Link user to hospital
+  await sb.from('hospital_users').insert({
+    user_id: data.user.id,
+    hospital_id: selectedPracticeId,
+    role: 'manager'
+  });
+
+  await onSignedIn(data.user);
+}
+
+async function handleSignOut() {
+  await sb.auth.signOut();
+  currentUser = null;
+  currentHospital = null;
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+async function onSignedIn(user) {
+  currentUser = user;
+
+  // Load their linked hospital
+  const { data: link } = await sb.from('hospital_users')
+    .select('hospital_id, hospitals(id, name, address, postcode, website, practice_bio, salary_range, is_hiring, advert_published, culture_values, equipment_highlights, work_life_balance, out_of_hours, cpd_budget, ownership, corporate_group, rcvs_accredited)')
+    .eq('user_id', user.id)
+    .single();
+
+  if (link && link.hospitals) {
+    currentHospital = link.hospitals;
+    const name = currentHospital.name;
+    const addr = currentHospital.address || '';
+    const postcode = currentHospital.postcode || '';
+    const initials = name.split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase();
+
+    // Update all name references
+    const el = id => document.getElementById(id);
+    if (el('sidebar-practice-name'))  el('sidebar-practice-name').textContent = name;
+    if (el('sidebar-user-email'))     el('sidebar-user-email').textContent = user.email;
+    if (el('sidebar-logo-badge'))     el('sidebar-logo-badge').textContent = '🏥 ' + name;
+    if (el('topbar-avatar'))          el('topbar-avatar').textContent = initials;
+    if (el('welcome-title'))          el('welcome-title').textContent = 'Welcome back, ' + name + ' 👋';
+    if (el('preview-practice-name'))  el('preview-practice-name').textContent = name;
+
+    // Clean address — strip trailing postcode duplicates then append once
+    let cleanAddr = addr.replace(new RegExp(`(,?\\s*${postcode})+`, 'gi'), '').trim().replace(/,\s*$/, '');
+    el('preview-practice-loc').textContent = '📍 ' + cleanAddr + (postcode ? ', ' + postcode : '');
+
+    // Preview pills — driven by real hospital data
+    const hiringPill = el('preview-pill-hiring');
+    const rcvsPill = el('preview-pill-rcvs');
+    const salaryPill = el('preview-pill-salary');
+    if (hiringPill) hiringPill.style.display = currentHospital.is_hiring ? '' : 'none';
+    if (rcvsPill) rcvsPill.style.display = currentHospital.rcvs_accredited ? '' : 'none';
+    if (salaryPill && currentHospital.salary_range) {
+      salaryPill.textContent = currentHospital.salary_range;
+      salaryPill.style.display = '';
+    }
+
+    // Preview stats
+    if (el('preview-salary')) el('preview-salary').textContent = currentHospital.salary_range || '—';
+    if (el('form-practice-name'))     el('form-practice-name').value = name;
+    if (el('form-practice-address'))  el('form-practice-address').value = addr + (postcode ? ', ' + postcode : '');
+    if (el('form-practice-website'))  el('form-practice-website').value = currentHospital.website || '';
+    if (el('form-practice-bio'))      el('form-practice-bio').value = currentHospital.practice_bio || '';
+    if (el('form-culture'))           el('form-culture').value = currentHospital.culture_values || '';
+    if (el('form-equipment'))         el('form-equipment').value = currentHospital.equipment_highlights || '';
+    if (el('form-wlb'))               el('form-wlb').value = currentHospital.work_life_balance || '';
+    if (el('form-ooh'))               el('form-ooh').value = currentHospital.out_of_hours || '';
+    if (el('form-cpd-budget'))        el('form-cpd-budget').value = currentHospital.cpd_budget || '';
+
+    // Populate salary fields
+    if (currentHospital.salary_range) {
+      const match = currentHospital.salary_range.match(/£([\d,]+)–£([\d,]+)/);
+      if (match) {
+        if (el('form-salary-from')) el('form-salary-from').value = match[1].replace(/,/g, '');
+        if (el('form-salary-to'))   el('form-salary-to').value = match[2].replace(/,/g, '');
+      }
+    }
+
+    // Set hiring status
+    currentHiringStatus = currentHospital.is_hiring || false;
+    const hiringOpts = document.querySelectorAll('#hiring-status-opts .q-opt');
+    hiringOpts.forEach(o => o.classList.remove('on'));
+    if (currentHiringStatus && hiringOpts[0]) hiringOpts[0].classList.add('on');
+    else if (!currentHiringStatus && hiringOpts[1]) hiringOpts[1].classList.add('on');
+
+    // Load real candidate interests for this hospital
+    await loadCandidateInterests();
+    updateProfileCompleteness();
+  }
+
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'flex';
+  buildCandListFixed();
+}
+
+// ══════════════════════════════
+// LOAD REAL CANDIDATE INTERESTS
+// ══════════════════════════════
+async function loadCandidateInterests() {
+  if (!currentHospital) return;
+
+  // Load interests rows (express interest + enquiry stage)
+  const { data: interestsData, error: interestsError } = await sb.from('interests')
+    .select(`
+      id,
+      hospital_id,
+      privacy_mode,
+      pipeline_stage,
+      created_at,
+      candidates (
+        id, first_name, last_name, years_exp, specialty,
+        salary_target, schedule, bio, qualifications,
+        open_to_opportunities
+      )
+    `)
+    .eq('hospital_id', currentHospital.id)
+    .order('created_at', { ascending: false });
+
+  if (interestsError) { console.error('loadCandidateInterests error:', interestsError.message); }
+
+  const interests = interestsData || [];
+
+  // Find candidate IDs who have messaged but have NO interests row
+  const { data: msgData } = await sb.from('messages')
+    .select('candidate_id, created_at')
+    .eq('hospital_id', currentHospital.id)
+    .eq('sender_type', 'candidate')
+    .order('created_at', { ascending: false });
+
+  if (msgData && msgData.length > 0) {
+    // Get unique candidate IDs not already in interests
+    const interestCandidateIds = new Set(interests.map(r => r.candidates?.id).filter(Boolean));
+    const newCandidateIds = [...new Set(
+      msgData
+        .map(m => m.candidate_id)
+        .filter(id => !interestCandidateIds.has(id))
+    )];
+
+    if (newCandidateIds.length > 0) {
+      // Fetch their candidate profiles
+      const { data: candData } = await sb.from('candidates')
+        .select('id, first_name, last_name, years_exp, specialty, salary_target, schedule, bio, qualifications')
+        .in('id', newCandidateIds);
+
+      const candMap = {};
+      (candData || []).forEach(c => { candMap[c.id] = c; });
+
+      // Synthesise as enquiry rows (no interests row exists)
+      newCandidateIds.forEach(candidateId => {
+        const firstMsg = msgData.find(m => m.candidate_id === candidateId);
+        interests.push({
+          id: 'msg-' + candidateId, // synthetic ID — no real interests row
+          hospital_id: currentHospital.id,
+          privacy_mode: 'anon',
+          pipeline_stage: 'enquiry',
+          created_at: firstMsg?.created_at,
+          candidates: candMap[candidateId] || { id: candidateId },
+          _messageOnly: true // flag so we know not to try updating an interests row
+        });
+      });
+
+      // Re-sort by created_at
+      interests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+  }
+
+  window.realInterests = interests;
+}
+
+// ══════════════════════════════
+// INIT
+// ══════════════════════════════
+window.addEventListener('load', async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    await onSignedIn(session.user);
+  }
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_OUT') {
+      document.getElementById('main-app').style.display = 'none';
+      document.getElementById('auth-screen').style.display = 'flex';
+    }
+  });
+
+  document.getElementById('signin-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleSignIn();
+  });
+
+  // Enter to send messages (Shift+Enter for newline)
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey && e.target.classList.contains('mm-ta')) {
+      e.preventDefault();
+      const id = e.target.id.replace('msg-input-', '');
+      if (id) sendHospitalMessage(id);
+    }
+  });
+});
+</script>
+</body>
+</html>
