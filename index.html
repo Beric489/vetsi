@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>vetsi — the smarter way to hire and be hired in vet med</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  height:100%; font-family:'DM Sans', sans-serif;
+  background:#061510; color:#f0ede6; overflow-x:hidden;
+}
+.bg { position:fixed; inset:0; z-index:0;
+  background: radial-gradient(ellipse at 20% 50%, rgba(13,43,31,0.9) 0%, #061510 60%),
+              radial-gradient(ellipse at 80% 20%, rgba(62,207,110,0.06) 0%, transparent 50%); }
+.bg-orb { position:absolute; border-radius:50%; background:rgba(62,207,110,0.04); animation:float 8s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
+.shell { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; }
+.logo { font-family:'Nunito',sans-serif; font-size:52px; font-weight:900; color:#f0ede6; letter-spacing:-1px; margin-bottom:8px; text-align:center; }
+.logo span { color:#3ecf6e; }
+.tagline { font-size:16px; color:rgba(240,237,230,0.4); text-align:center; margin-bottom:52px; font-style:italic; letter-spacing:0.3px; }
+.role-selector { display:flex; gap:16px; margin-bottom:40px; }
+.role-btn { padding:14px 32px; border-radius:12px; font-family:'Nunito',sans-serif; font-size:15px; font-weight:800; cursor:pointer; transition:all 0.2s; border:2px solid rgba(62,207,110,0.2); background:rgba(255,255,255,0.03); color:rgba(240,237,230,0.5); }
+.role-btn:hover { border-color:rgba(62,207,110,0.5); color:rgba(240,237,230,0.8); background:rgba(62,207,110,0.05); }
+.role-btn.active { border-color:#3ecf6e; background:rgba(62,207,110,0.1); color:#3ecf6e; }
+.card { width:100%; max-width:420px; background:#0d2b1f; border:1px solid rgba(62,207,110,0.15); border-radius:20px; padding:32px; box-shadow:0 32px 80px rgba(0,0,0,0.5); animation:cardIn 0.25s ease; }
+@keyframes cardIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.card-title { font-family:'Nunito',sans-serif; font-size:20px; font-weight:900; color:#f0ede6; margin-bottom:4px; letter-spacing:-0.3px; }
+.card-sub { font-size:13px; color:rgba(240,237,230,0.4); margin-bottom:24px; line-height:1.5; }
+.auth-tabs { display:flex; margin-bottom:22px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.auth-tab { flex:1; padding:9px; text-align:center; cursor:pointer; font-size:13px; font-weight:600; color:rgba(240,237,230,0.35); border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.15s; }
+.auth-tab.active { color:#3ecf6e; border-bottom-color:#3ecf6e; }
+.form { display:flex; flex-direction:column; gap:14px; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:rgba(240,237,230,0.3); }
+.input { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:11px 14px; color:#f0ede6; font-size:14px; font-family:'DM Sans',sans-serif; outline:none; transition:border-color 0.15s; }
+.input:focus { border-color:#3ecf6e; }
+.input::placeholder { color:rgba(240,237,230,0.2); }
+.input option { background:#0d2b1f; }
+.practice-results { max-height:180px; overflow-y:auto; margin-top:6px; }
+.practice-results::-webkit-scrollbar { width:3px; }
+.practice-results::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); }
+.practice-item { padding:10px 12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:7px; margin-bottom:5px; cursor:pointer; transition:border-color 0.15s; }
+.practice-item:hover { border-color:#3ecf6e; }
+.practice-item.selected { border-color:#3ecf6e; background:rgba(62,207,110,0.08); }
+.practice-item-name { font-size:12.5px; font-weight:600; color:#f0ede6; }
+.practice-item-addr { font-size:11px; color:rgba(240,237,230,0.35); margin-top:2px; }
+.selected-practice { display:none; margin-top:5px; padding:9px 12px; background:rgba(62,207,110,0.08); border:1px solid rgba(62,207,110,0.25); border-radius:7px; font-size:12px; color:#3ecf6e; font-weight:600; }
+.submit-btn { background:#3ecf6e; color:#0d2b1f; border:none; border-radius:10px; padding:14px; font-size:15px; font-weight:800; cursor:pointer; font-family:'Nunito',sans-serif; margin-top:4px; transition:opacity 0.15s; width:100%; }
+.submit-btn:hover { opacity:0.88; }
+.submit-btn:disabled { opacity:0.45; cursor:not-allowed; }
+.error-msg { background:rgba(220,38,38,0.1); border:1px solid rgba(220,38,38,0.3); border-radius:7px; padding:10px 13px; font-size:12.5px; color:#f87171; display:none; }
+.error-msg.show { display:block; }
+.spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(13,43,31,0.3); border-top-color:#0d2b1f; border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:6px; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.footer-note { margin-top:32px; text-align:center; font-size:12px; color:rgba(240,237,230,0.2); line-height:1.6; }
+.footer-note a { color:rgba(62,207,110,0.6); text-decoration:none; }
+.footer-note a:hover { color:#3ecf6e; }
+@media(max-width:480px) {
+  .logo{font-size:40px} .role-selector{flex-direction:column;gap:10px;width:100%;max-width:420px} .role-btn{text-align:center} .card{padding:24px 20px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg">
+  <div class="bg-orb" style="width:500px;height:500px;top:-150px;right:-100px;"></div>
+  <div class="bg-orb" style="width:350px;height:350px;bottom:-80px;left:-80px;animation-delay:3s;"></div>
+  <div class="bg-orb" style="width:200px;height:200px;top:40%;left:15%;animation-delay:5s;opacity:0.5;"></div>
+</div>
+
+<div class="shell">
+  <div class="logo">vet<span>si</span></div>
+  <div class="tagline">The smarter way to hire and be hired in vet med</div>
+
+  <div class="role-selector">
+    <button class="role-btn active" id="role-vet" onclick="setRole('vet')">🐾 Veterinarian Login</button>
+    <button class="role-btn" id="role-hospital" onclick="setRole('hospital')">🏥 Hospital Login</button>
+  </div>
+
+  <div class="card" id="auth-card">
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-signin" onclick="setTab('signin')">Sign in</div>
+      <div class="auth-tab" id="tab-register" onclick="setTab('register')">Create account</div>
+    </div>
+
+    <!-- SIGN IN -->
+    <div id="signin-form" class="form">
+      <div class="card-title" id="signin-title">Welcome back</div>
+      <div class="card-sub" id="signin-sub">Sign in to your vetsi account</div>
+      <div class="form-group">
+        <label class="label">Email</label>
+        <input class="input" id="signin-email" type="email" placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label class="label">Password</label>
+        <input class="input" id="signin-password" type="password" placeholder="Your password">
+      </div>
+      <div class="error-msg" id="signin-error"></div>
+      <button class="submit-btn" id="signin-btn" onclick="handleSignIn()">Sign in</button>
+    </div>
+
+    <!-- REGISTER VET -->
+    <div id="register-vet-form" class="form" style="display:none">
+      <div class="card-title">Create your free account</div>
+      <div class="card-sub">Join UK vets browsing practices anonymously</div>
+      <div class="form-group">
+        <label class="label">Email</label>
+        <input class="input" id="reg-vet-email" type="email" placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label class="label">Password</label>
+        <input class="input" id="reg-vet-password" type="password" placeholder="At least 8 characters">
+      </div>
+      <div class="error-msg" id="reg-vet-error"></div>
+      <button class="submit-btn" id="reg-vet-btn" onclick="handleVetRegister()">Create free account</button>
+      <div style="font-size:11.5px;color:rgba(240,237,230,0.25);text-align:center;margin-top:4px;">Free forever for vets. No card required.</div>
+    </div>
+
+    <!-- REGISTER HOSPITAL -->
+    <div id="register-hospital-form" class="form" style="display:none">
+      <div class="card-title">Register your practice</div>
+      <div class="card-sub">Start receiving candidate enquiries from UK vets</div>
+      <div class="form-group">
+        <label class="label">Your email</label>
+        <input class="input" id="reg-hosp-email" type="email" placeholder="manager@practice.com">
+      </div>
+      <div class="form-group">
+        <label class="label">Password</label>
+        <input class="input" id="reg-hosp-password" type="password" placeholder="At least 8 characters">
+      </div>
+      <div class="form-group">
+        <label class="label">Find your practice</label>
+        <input class="input" id="reg-hosp-search" type="text" placeholder="Start typing your practice name…" oninput="searchPractices()">
+        <div class="practice-results" id="practice-results"></div>
+        <div class="selected-practice" id="selected-practice-display"></div>
+      </div>
+      <div class="error-msg" id="reg-hosp-error"></div>
+      <button class="submit-btn" id="reg-hosp-btn" onclick="handleHospitalRegister()">Register practice</button>
+      
+    </div>
+  </div>
+
+  <div class="footer-note">
+    By signing in you agree to our <a href="terms.html" target="_blank">Terms of Service</a> and <a href="privacy.html" target="_blank">Privacy Policy</a>.<br>
+    vetsi is free for veterinary professionals.
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://lnruacfecwuvrlmyrwlr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxucnVhY2ZlY3d1dnJsbXlyd2xyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNDkyNzQsImV4cCI6MjA5MDkyNTI3NH0.CrkAKVr_dLTNUoyayclbOEFp6WGB0lxP8c0o0IiR5P8';
+
+// Separate clients with scoped storage — same pattern as the apps themselves
+const sbVet = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { storageKey: 'vetsi-candidate-session', persistSession: true, autoRefreshToken: true }
+});
+const sbHosp = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { storageKey: 'vetsi-employer-session', persistSession: true, autoRefreshToken: true }
+});
+
+let currentRole = 'vet';
+let currentTab  = 'signin';
+let selectedPracticeId = null;
+
+window.addEventListener('load', async () => {
+  // Read URL param first so we know which role before checking sessions
+  const params = new URLSearchParams(window.location.search);
+  const role = params.get('role');
+  if (role === 'hospital') {
+    setRole('hospital');
+    setTab('register');
+  } else {
+    setRole('vet');
+  }
+  window.history.replaceState(null, '', window.location.pathname);
+
+  // Check if already logged in on the correct scoped client
+  const { data: { session: vetSession } } = await sbVet.auth.getSession();
+  const { data: { session: hospSession } } = await sbHosp.auth.getSession();
+
+  // Auto-redirect only if they have a valid session for the selected role
+  if (role === 'hospital' && hospSession) {
+    window.location.replace('vetsi-employer.html'); return;
+  } else if (role !== 'hospital' && vetSession) {
+    window.location.replace('vetsi-v2.html'); return;
+  }
+  // If sessions exist for both or the wrong one, do nothing — let them log in fresh
+
+  document.getElementById('signin-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleSignIn();
+  });
+  document.getElementById('reg-vet-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleVetRegister();
+  });
+});
+
+function sb() {
+  // Return the correct scoped client based on current role
+  return currentRole === 'hospital' ? sbHosp : sbVet;
+}
+
+function setRole(role) {
+  currentRole = role;
+  document.getElementById('role-vet').classList.toggle('active', role === 'vet');
+  document.getElementById('role-hospital').classList.toggle('active', role === 'hospital');
+  document.getElementById('signin-title').textContent = role === 'vet' ? 'Welcome back' : 'Practice portal';
+  document.getElementById('signin-sub').textContent = role === 'vet' ? 'Sign in to your vetsi account' : 'Sign in to your hospital dashboard';
+  setTab(currentTab);
+  clearErrors();
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('signin-form').style.display = tab === 'signin' ? 'flex' : 'none';
+  document.getElementById('register-vet-form').style.display = (tab === 'register' && currentRole === 'vet') ? 'flex' : 'none';
+  document.getElementById('register-hospital-form').style.display = (tab === 'register' && currentRole === 'hospital') ? 'flex' : 'none';
+  clearErrors();
+}
+
+function clearErrors() {
+  document.querySelectorAll('.error-msg').forEach(e => e.classList.remove('show'));
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function setLoading(btnId, loading, defaultText) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  btn.innerHTML = loading ? '<span class="spinner"></span>Please wait…' : defaultText;
+}
+
+async function handleSignIn() {
+  const email = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value;
+  if (!email || !password) { showError('signin-error', 'Please enter your email and password.'); return; }
+  setLoading('signin-btn', true, 'Sign in');
+  const { data, error } = await sb().auth.signInWithPassword({ email, password });
+  setLoading('signin-btn', false, 'Sign in');
+  if (error) { showError('signin-error', error.message); return; }
+  // Redirect based on role — don't query DB, trust the role they signed in on
+  if (currentRole === 'hospital') {
+    window.location.replace('vetsi-employer.html');
+  } else {
+    window.location.replace('vetsi-v2.html');
+  }
+}
+
+async function handleVetRegister() {
+  const email = document.getElementById('reg-vet-email').value.trim();
+  const password = document.getElementById('reg-vet-password').value;
+  if (!email) { showError('reg-vet-error', 'Please enter your email.'); return; }
+  if (password.length < 8) { showError('reg-vet-error', 'Password must be at least 8 characters.'); return; }
+  setLoading('reg-vet-btn', true, 'Create free account');
+  const { data, error } = await sbVet.auth.signUp({ email, password });
+  setLoading('reg-vet-btn', false, 'Create free account');
+  if (error) { showError('reg-vet-error', error.message); return; }
+  window.location.replace('vetsi-v2.html');
+}
+
+async function handleHospitalRegister() {
+  const email = document.getElementById('reg-hosp-email').value.trim();
+  const password = document.getElementById('reg-hosp-password').value;
+  if (!email) { showError('reg-hosp-error', 'Please enter your email.'); return; }
+  if (password.length < 8) { showError('reg-hosp-error', 'Password must be at least 8 characters.'); return; }
+  if (!selectedPracticeId) { showError('reg-hosp-error', 'Please search for and select your practice.'); return; }
+  setLoading('reg-hosp-btn', true, 'Register practice');
+  const { data, error } = await sbHosp.auth.signUp({ email, password });
+  setLoading('reg-hosp-btn', false, 'Register practice');
+  if (error) { showError('reg-hosp-error', error.message); return; }
+  await sbHosp.from('hospital_users').insert({ user_id: data.user.id, hospital_id: selectedPracticeId, role: 'manager' });
+  window.location.replace('vetsi-employer.html');
+}
+
+async function searchPractices() {
+  const q = document.getElementById('reg-hosp-search').value.trim();
+  const resultsEl = document.getElementById('practice-results');
+  if (q.length < 2) { resultsEl.innerHTML = ''; return; }
+  const { data } = await sbHosp.from('hospitals').select('id, name, address, postcode').ilike('name', `%${q}%`).limit(6);
+  if (!data || data.length === 0) {
+    resultsEl.innerHTML = '<div style="padding:8px;font-size:12px;color:rgba(240,237,230,0.35);">No practices found</div>';
+    return;
+  }
+  resultsEl.innerHTML = data.map(p => `
+    <div class="practice-item ${selectedPracticeId===p.id?'selected':''}" onclick="selectPractice('${p.id}','${p.name.replace(/'/g,"\\'")}','${p.postcode}')">
+      <div class="practice-item-name">${p.name}</div>
+      <div class="practice-item-addr">${p.address}, ${p.postcode}</div>
+    </div>`).join('');
+}
+
+function selectPractice(id, name, postcode) {
+  selectedPracticeId = id;
+  const d = document.getElementById('selected-practice-display');
+  d.style.display = 'block';
+  d.textContent = '✓ ' + name + ' · ' + postcode;
+  document.getElementById('practice-results').innerHTML = '';
+  document.getElementById('reg-hosp-search').value = name;
+}
+</script>
+</body>
+</html>
