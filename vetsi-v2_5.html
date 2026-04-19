@@ -1,0 +1,4122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>vetsi — the smarter way to hire and be hired in vet med</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --forest: #0d2b1f;
+  --forest-mid: #163d2c;
+  --forest-light: #1e5038;
+  --mint: #3ecf6e;
+  --mint-pale: rgba(62,207,110,0.12);
+  --mint-border: rgba(62,207,110,0.25);
+  --cream: #f5f0e8;
+  --text-primary: #f0ede6;
+  --text-secondary: rgba(240,237,230,0.6);
+  --text-muted: rgba(240,237,230,0.35);
+  --card-bg: rgba(255,255,255,0.04);
+  --card-border: rgba(255,255,255,0.08);
+  --sidebar-w: 260px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; background:var(--forest); color:var(--text-primary); }
+
+/* ── LAYOUT ── */
+.app { display:flex; height:100vh; }
+.sidebar {
+  width:var(--sidebar-w); min-width:var(--sidebar-w);
+  background:var(--forest); border-right:1px solid var(--card-border);
+  display:flex; flex-direction:column; z-index:100; overflow:hidden;
+}
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+/* ── SIDEBAR ── */
+.logo {
+  padding:22px 20px 16px;
+  font-family:'Nunito', sans-serif; font-weight:900; font-size:26px;
+  letter-spacing:-0.5px; color:var(--text-primary);
+  border-bottom:1px solid var(--card-border);
+}
+.logo span { color:var(--mint); }
+
+.nav { flex:1; overflow-y:auto; padding:8px 0; }
+.nav::-webkit-scrollbar { width:4px; }
+.nav::-webkit-scrollbar-track { background:transparent; }
+.nav::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:2px; }
+.nav-item {
+  display:flex; align-items:center; gap:11px;
+  padding:10px 20px; cursor:pointer; font-size:13.5px; font-weight:500;
+  color:var(--text-secondary); transition:all 0.15s; border-radius:0;
+  position:relative;
+}
+.nav-item:hover { color:var(--text-primary); background:var(--card-bg); }
+.nav-item.active { color:var(--mint); background:var(--mint-pale); }
+.nav-item.active::before {
+  content:''; position:absolute; left:0; top:0; bottom:0;
+  width:3px; background:var(--mint); border-radius:0 2px 2px 0;
+}
+.nav-icon { font-size:16px; width:20px; text-align:center; }
+.nav-badge {
+  margin-left:auto; background:var(--mint); color:var(--forest);
+  font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px;
+}
+
+.sidebar-bottom {
+  padding:14px 16px; border-top:1px solid var(--card-border);
+}
+.profile-chip {
+  display:flex; align-items:center; gap:10px; cursor:pointer;
+  padding:8px 10px; border-radius:8px; transition:background 0.15s;
+}
+.profile-chip:hover { background:var(--card-bg); }
+.avatar {
+  width:34px; height:34px; border-radius:50%;
+  background:linear-gradient(135deg, var(--mint), #1a8a45);
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; color:var(--forest); flex-shrink:0;
+}
+.profile-chip-info { flex:1; min-width:0; }
+.profile-chip-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.profile-chip-role { font-size:11px; color:var(--text-muted); }
+
+/* ── TOPBAR ── */
+.topbar {
+  height:56px; min-height:56px; background:var(--forest-mid);
+  border-bottom:1px solid var(--card-border);
+  display:flex; align-items:center; gap:12px; padding:0 20px;
+}
+.topbar-title {
+  font-family:'Nunito', sans-serif; font-weight:900; font-size:18px;
+  margin-right:auto;
+}
+.postcode-form {
+  display:flex; align-items:center; gap:8px;
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:8px; padding:0 12px; height:36px;
+}
+.postcode-form input {
+  background:transparent; border:none; outline:none;
+  color:var(--text-primary); font-size:13px; width:120px; font-family:'DM Sans',sans-serif;
+}
+.postcode-form input::placeholder { color:var(--text-muted); }
+.postcode-btn {
+  background:var(--mint); color:var(--forest);
+  border:none; border-radius:5px; padding:4px 10px;
+  font-size:12px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif;
+  transition:opacity 0.15s;
+}
+.postcode-btn:hover { opacity:0.85; }
+.distance-badge {
+  font-size:11px; color:var(--text-secondary);
+  background:var(--card-bg); padding:4px 10px; border-radius:6px;
+  border:1px solid var(--card-border);
+  display:flex; align-items:center; gap:6px;
+}
+
+/* ── CONTENT AREA ── */
+.content { flex:1; overflow:hidden; position:relative; }
+
+/* ── MAP VIEW ── */
+#map-view { display:flex; height:100%; }
+#leaflet-map { flex:1; height:100%; }
+.practice-list-panel {
+  width:340px; background:var(--forest-mid); border-left:1px solid var(--card-border);
+  overflow-y:auto; flex-shrink:0;
+}
+.practice-list-panel::-webkit-scrollbar { width:4px; }
+.practice-list-panel::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:2px; }
+.panel-header {
+  padding:16px 16px 10px; border-bottom:1px solid var(--card-border);
+  position:sticky; top:0; background:var(--forest-mid); z-index:10;
+}
+.panel-header-row { display:flex; align-items:center; gap:7px; margin-bottom:8px; }
+.panel-header h3 { font-size:14px; font-weight:700; margin:0; }
+.info-icon-wrap { position:relative; display:inline-flex; align-items:center; flex-shrink:0; }
+.info-icon {
+  width:16px; height:16px; border-radius:50%;
+  border:1.5px solid var(--text-muted); color:var(--text-muted);
+  font-size:9px; font-weight:700; font-family:'DM Sans',sans-serif;
+  display:flex; align-items:center; justify-content:center;
+  cursor:default; transition:border-color 0.15s, color 0.15s;
+  flex-shrink:0; line-height:1;
+}
+.info-icon-wrap:hover .info-icon { border-color:var(--mint); color:var(--mint); }
+.info-tooltip {
+  display:none; position:absolute; left:50%; transform:translateX(-50%); top:22px;
+  width:240px; background:#0d2b1f; border:1px solid var(--mint-border);
+  border-radius:10px; padding:12px 14px; font-size:11.5px; line-height:1.65;
+  color:var(--text-secondary); z-index:200;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  pointer-events:none;
+}
+.info-tooltip::before {
+  content:''; position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+  border:6px solid transparent; border-bottom-color:#0d2b1f;
+}
+.info-icon-wrap:hover .info-tooltip { display:block; }
+.filter-pills { display:flex; gap:6px; flex-wrap:wrap; }
+.pill {
+  padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;
+  cursor:pointer; border:1px solid var(--card-border); color:var(--text-secondary);
+  transition:all 0.15s; background:transparent; font-family:'DM Sans',sans-serif;
+}
+.pill.active { background:var(--mint); color:var(--forest); border-color:var(--mint); }
+.pill:hover:not(.active) { border-color:var(--mint); color:var(--mint); }
+
+.practice-card {
+  padding:14px 16px; border-bottom:1px solid var(--card-border);
+  cursor:pointer; transition:background 0.15s;
+}
+.practice-card:hover { background:var(--card-bg); }
+.practice-card.active { background:var(--mint-pale); border-left:2px solid var(--mint); }
+.practice-card.hiring-glow {
+  border-left:3px solid #f4b942;
+  background:rgba(244,185,66,0.04);
+  box-shadow:inset 3px 0 0 #f4b942;
+}
+.practice-card.hiring-glow:hover { background:rgba(244,185,66,0.08); }
+.practice-card.hiring-glow.active { background:rgba(62,207,110,0.08); border-left:3px solid var(--mint); }
+.pc-header { display:flex; align-items:flex-start; gap:10px; }
+.pc-icon {
+  width:36px; height:36px; border-radius:8px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; background:var(--card-bg); border:1px solid var(--card-border);
+}
+.pc-icon.hiring-icon { border-color:#f4b942; box-shadow:0 0 8px rgba(244,185,66,0.5); }
+.pc-name { font-size:13px; font-weight:700; line-height:1.3; margin-bottom:2px; }
+.pc-address { font-size:11px; color:var(--text-muted); line-height:1.4; }
+.pc-meta { display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
+.pc-tag {
+  font-size:10px; padding:2px 7px; border-radius:10px;
+  border:1px solid var(--card-border); color:var(--text-secondary); font-weight:500;
+}
+.pc-tag.independent { border-color:var(--mint-border); color:var(--mint); }
+.pc-tag.hiring { background:#f4b942; color:#0d2b1f; border-color:#f4b942; font-weight:700; }
+.pc-stars { font-size:11px; color:#f4b942; margin-left:auto; }
+.pc-dist { font-size:11px; color:var(--mint); font-weight:600; }
+
+/* Job advert in drawer */
+.drawer-job-listing {
+  background:rgba(244,185,66,0.08); border:1px solid rgba(244,185,66,0.3);
+  border-radius:10px; padding:14px 16px; margin-bottom:16px;
+  cursor:pointer; transition:all 0.15s;
+}
+.drawer-job-listing:hover { background:rgba(244,185,66,0.14); border-color:#f4b942; }
+.djl-header { display:flex; align-items:center; gap:10px; }
+.djl-icon { font-size:22px; }
+.djl-title { font-size:14px; font-weight:700; color:var(--cream); }
+.djl-meta { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.djl-badge { margin-left:auto; background:#f4b942; color:#0d2b1f; font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; }
+.djl-arrow { margin-left:8px; color:var(--text-muted); font-size:14px; }
+
+/* Full advert overlay */
+.advert-overlay {
+  position:fixed;
+  top:0; bottom:0;
+  width:460px;
+  background:var(--forest-mid);
+  z-index:200;
+  overflow-y:auto;
+  display:none;
+  flex-direction:column;
+  border-left:1px solid var(--card-border);
+  box-shadow:-4px 0 20px rgba(0,0,0,0.3);
+}
+.advert-overlay.open { display:flex; }
+.advert-overlay-header {
+  padding:16px 20px; border-bottom:1px solid var(--card-border);
+  display:flex; align-items:center; gap:12px;
+  position:sticky; top:0; background:var(--forest-mid); z-index:1;
+}
+.advert-overlay-body { padding:24px; flex:1; }
+.advert-overlay-body h2 { font-family:'Nunito',sans-serif; font-size:20px; font-weight:800; color:var(--cream); margin-bottom:12px; line-height:1.3; }
+.advert-overlay-body h3 { font-size:14px; font-weight:700; color:var(--mint); margin:18px 0 8px; text-transform:uppercase; letter-spacing:0.5px; }
+.advert-overlay-body p { font-size:14px; color:var(--cream-dim); line-height:1.7; margin-bottom:10px; }
+.advert-overlay-body ul { padding-left:18px; margin-bottom:10px; }
+.advert-overlay-body li { font-size:14px; color:var(--cream-dim); line-height:1.7; margin-bottom:4px; }
+.advert-overlay-body .highlight {
+  background:rgba(62,207,110,0.08); border-left:3px solid var(--mint);
+  padding:12px 16px; border-radius:0 8px 8px 0;
+  font-size:14px; color:var(--cream-dim); line-height:1.65; margin:16px 0;
+  font-style:italic;
+}
+
+/* ── DRAWER (inline panel — no z-index fighting the map) ── */
+.drawer-overlay { display:none; } /* not used — kept for JS compat */
+.drawer {
+  width:0; min-width:0; overflow:hidden;
+  background:var(--forest-mid); border-left:1px solid var(--card-border);
+  transition:width 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+  display:flex; flex-direction:column; flex-shrink:0;
+  position:relative;
+  /* sits as a sibling inside #map-view flex row */
+}
+.drawer.open { width:460px; min-width:460px; overflow-y:auto; overflow-x:hidden; }
+.drawer::-webkit-scrollbar { width:4px; }
+.drawer::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:2px; }
+.drawer::-webkit-scrollbar { width:4px; }
+.drawer::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:2px; }
+.drawer-header {
+  padding:20px 24px 16px; border-bottom:1px solid var(--card-border);
+  position:sticky; top:0; background:var(--forest-mid); z-index:10;
+}
+.drawer-close {
+  float:right; background:var(--card-bg); border:1px solid var(--card-border);
+  color:var(--text-secondary); width:28px; height:28px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  font-size:16px; transition:all 0.15s;
+}
+.drawer-close:hover { color:var(--text-primary); border-color:var(--mint); }
+.drawer-name { font-size:20px; font-weight:800; margin-bottom:4px; font-family:'Nunito',sans-serif; }
+.drawer-addr { font-size:13px; color:var(--text-muted); margin-bottom:12px; }
+.drawer-pills { display:flex; gap:6px; flex-wrap:wrap; }
+.drawer-body { padding:20px 24px; flex:1; }
+.drawer-section { margin-bottom:22px; }
+.drawer-section h4 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px; }
+.drawer-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.drawer-stat {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:8px; padding:12px;
+}
+.drawer-stat-val { font-size:18px; font-weight:800; color:var(--mint); margin-bottom:2px; }
+.drawer-stat-label { font-size:11px; color:var(--text-muted); }
+.review-item {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:8px; padding:12px; margin-bottom:8px; font-size:12.5px;
+  color:var(--text-secondary); line-height:1.6;
+}
+.review-author { font-size:11px; color:var(--mint); font-weight:600; margin-bottom:4px; }
+.interest-btn {
+  width:100%; background:var(--mint); color:var(--forest);
+  border:none; border-radius:10px; padding:14px;
+  font-size:15px; font-weight:800; cursor:pointer;
+  font-family:'Nunito', sans-serif; transition:opacity 0.15s; margin-top:4px;
+}
+.interest-btn:hover { opacity:0.88; }
+
+/* ── EXPRESS INTEREST BANNER in Messages ── */
+.express-interest-banner {
+  background: linear-gradient(135deg, var(--forest), #1a4d35);
+  border: 1px solid var(--mint-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eib-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.eib-text strong { color: var(--mint); font-weight: 700; }
+.eib-btn {
+  background: var(--mint); color: var(--forest);
+  border: none; border-radius: 8px; padding: 10px 14px;
+  font-size: 13px; font-weight: 800; cursor: pointer;
+  font-family: 'Nunito', sans-serif; transition: opacity 0.15s;
+  text-align: center;
+}
+.eib-btn:hover { opacity: 0.88; }
+.eib-btn.already { background: transparent; color: var(--mint); border: 1px solid var(--mint-border); cursor: default; }
+.eib-btn.already:hover { opacity: 1; }
+.message-btn {
+  width:100%; background:transparent; color:var(--mint);
+  border:1.5px solid var(--mint-border); border-radius:10px; padding:12px;
+  font-size:14px; font-weight:700; cursor:pointer;
+  font-family:'Nunito', sans-serif; transition:all 0.15s; margin-top:8px; margin-bottom:22px;
+}
+.message-btn:hover { background:var(--mint-pale); border-color:var(--mint); }
+.message-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* ── MESSAGE COMPOSER PANEL ── */
+.message-panel {
+  display:none; background:var(--forest);
+  border:1px solid var(--mint-border); border-radius:14px;
+  padding:18px; margin-top:10px;
+}
+.message-panel.open { display:block; margin-bottom:22px; }
+.message-panel h3 { font-size:16px; font-weight:800; margin-bottom:4px; font-family:'Nunito',sans-serif; color:var(--text-primary); }
+.message-panel-note {
+  font-size:11.5px; color:var(--text-muted); margin-bottom:12px;
+  line-height:1.5; padding:8px 10px;
+  background:rgba(62,207,110,0.08); border-radius:7px;
+  border-left:2px solid var(--mint);
+}
+.message-panel textarea {
+  width:100%; background:var(--card-bg); border:1.5px solid var(--card-border);
+  border-radius:8px; padding:10px 12px; font-family:'DM Sans',sans-serif;
+  font-size:13px; color:var(--text-primary); resize:none; outline:none;
+  transition:border-color 0.15s; min-height:80px; box-sizing:border-box;
+}
+.message-panel textarea:focus { border-color:var(--mint); }
+.message-panel textarea::placeholder { color:var(--text-muted); }
+
+/* ── NOT ON VETSI STATE ── */
+.not-on-vetsi {
+  display:none; background:var(--card-bg);
+  border:1px solid var(--card-border); border-radius:14px;
+  padding:18px; margin-top:10px; text-align:center;
+}
+.not-on-vetsi.open { display:block; margin-bottom:22px; }
+.not-on-vetsi-ico { font-size:28px; margin-bottom:8px; }
+.not-on-vetsi-title { font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:6px; }
+.not-on-vetsi-body { font-size:12px; color:var(--text-muted); line-height:1.6; margin-bottom:14px; }
+.not-on-vetsi-cta { width:100%; background:var(--mint); color:var(--forest); border:none; border-radius:8px; padding:11px; font-size:13px; font-weight:800; cursor:pointer; font-family:'Nunito',sans-serif; }
+.species-pills { display:flex; gap:5px; flex-wrap:wrap; }
+.species-pill {
+  font-size:11px; padding:3px 9px; border-radius:12px;
+  background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-secondary);
+}
+
+/* ── OWNERSHIP INFO TOOLTIP ── */
+.ownership-info {
+  display:inline-block; cursor:pointer; font-size:10px;
+  color:var(--text-muted); margin-left:3px; position:relative;
+}
+.ownership-tooltip {
+  display:none; position:absolute; bottom:calc(100% + 6px); left:50%;
+  transform:translateX(-50%); width:220px;
+  background:var(--forest-mid); border:1px solid var(--card-border);
+  border-radius:8px; padding:9px 11px; font-size:11px;
+  color:var(--text-secondary); line-height:1.5; z-index:100;
+  box-shadow:0 4px 16px rgba(0,0,0,0.3); text-align:left;
+  pointer-events:none;
+}
+.ownership-info:hover .ownership-tooltip { display:block; pointer-events:auto; }
+
+/* ── INTEREST PANEL (inline inside drawer — no z-index conflict) ── */
+.interest-panel {
+  display:none;
+  background:var(--forest); border:1px solid var(--mint-border);
+  border-radius:14px; padding:22px; margin-top:12px;
+}
+.interest-panel.open { display:block; margin-bottom:22px; }
+.interest-panel h3 { font-size:18px; font-weight:800; margin-bottom:4px; font-family:'Nunito',sans-serif; }
+.interest-panel p { font-size:13px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5; }
+.privacy-option {
+  background:var(--card-bg); border:2px solid var(--card-border);
+  border-radius:10px; padding:14px; margin-bottom:10px; cursor:pointer;
+  transition:border-color 0.15s;
+}
+.privacy-option:hover, .privacy-option.selected { border-color:var(--mint); }
+.privacy-option.selected { background:var(--mint-pale); }
+.privacy-label { font-size:13px; font-weight:700; margin-bottom:3px; }
+.privacy-desc { font-size:12px; color:var(--text-muted); }
+.modal-actions { display:flex; gap:10px; margin-top:16px; }
+.modal-btn {
+  flex:1; padding:12px; border-radius:8px; font-size:13px; font-weight:700;
+  cursor:pointer; border:1px solid var(--card-border); font-family:'DM Sans',sans-serif;
+  background:transparent; color:var(--text-secondary); transition:all 0.15s;
+}
+.modal-btn.primary { background:var(--mint); color:var(--forest); border-color:var(--mint); }
+.modal-btn:hover:not(.primary) { border-color:var(--mint); color:var(--mint); }
+.modal-btn.primary:hover { opacity:0.88; }
+
+/* ── VIEWS (non-map) ── */
+.page-view {
+  display:none; height:100%; overflow-y:auto; padding:28px 32px;
+}
+.page-view::-webkit-scrollbar { width:6px; }
+.page-view::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:3px; }
+.page-view.active { display:block; }
+.page-title {
+  font-family:'Nunito', sans-serif; font-weight:900; font-size:28px;
+  margin-bottom:6px;
+}
+.page-subtitle { font-size:14px; color:var(--text-muted); margin-bottom:28px; }
+
+/* ── CARDS ── */
+.card {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:12px; padding:20px; margin-bottom:16px;
+}
+.card-title { font-size:16px; font-weight:700; margin-bottom:4px; font-family:'Nunito',sans-serif; }
+.card-sub { font-size:13px; color:var(--text-muted); margin-bottom:14px; }
+
+/* ── PROFILE VIEW ── */
+.profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-group { margin-bottom:16px; }
+.form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); margin-bottom:6px; display:block; }
+.form-input, .form-select, .form-textarea {
+  width:100%; background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:8px; padding:10px 12px; color:var(--text-primary);
+  font-size:13px; font-family:'DM Sans',sans-serif; outline:none;
+  transition:border-color 0.15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--mint); }
+.form-select option { background:var(--forest-mid); color:var(--text-primary); }
+.form-textarea { resize:vertical; min-height:80px; }
+.save-btn {
+  background:var(--mint); color:var(--forest); border:none;
+  border-radius:8px; padding:10px 20px; font-size:13px; font-weight:700;
+  cursor:pointer; font-family:'DM Sans',sans-serif; transition:opacity 0.15s;
+}
+.save-btn:hover { opacity:0.88; }
+.save-toast {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--mint-pale); border:1px solid var(--mint-border);
+  color:var(--mint); font-size:12px; padding:6px 12px; border-radius:6px;
+  margin-left:10px; opacity:0; transition:opacity 0.3s;
+}
+.save-toast.show { opacity:1; }
+.profile-avatar-big {
+  width:80px; height:80px; border-radius:50%;
+  background:linear-gradient(135deg, var(--mint), #1a8a45);
+  display:flex; align-items:center; justify-content:center;
+  font-size:28px; font-weight:800; color:var(--forest);
+  font-family:'Nunito', sans-serif; flex-shrink:0;
+}
+
+/* ── CAREER SNAPSHOT ── */
+.snapshot-card {
+  background:linear-gradient(135deg, var(--forest-light) 0%, var(--forest-mid) 100%);
+  border:1px solid var(--mint-border); border-radius:16px; padding:28px;
+  max-width:540px;
+}
+.snapshot-name { font-family:'Nunito',sans-serif; font-weight:900; font-size:24px; margin-bottom:2px; }
+.snapshot-title { color:var(--mint); font-size:14px; font-weight:600; margin-bottom:16px; }
+.snapshot-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+.snapshot-item {
+  background:rgba(0,0,0,0.2); border-radius:8px; padding:12px 16px; flex:1; min-width:120px;
+}
+.snapshot-item-val { font-size:20px; font-weight:800; color:var(--mint); }
+.snapshot-item-label { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.snapshot-link {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--mint); color:var(--forest); border:none; border-radius:8px;
+  padding:10px 18px; font-size:13px; font-weight:700; cursor:pointer;
+  font-family:'DM Sans',sans-serif; text-decoration:none; transition:opacity 0.15s;
+}
+.snapshot-link:hover { opacity:0.88; }
+
+/* ── SALARY VIEW ── */
+.salary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+.salary-band {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:10px; padding:16px; text-align:center;
+}
+.salary-band-val { font-size:22px; font-weight:800; color:var(--mint); font-family:'Nunito',sans-serif; }
+.salary-band-label { font-size:11px; color:var(--text-muted); margin-top:3px; }
+.salary-band-range { font-size:12px; color:var(--text-secondary); margin-top:4px; }
+.calc-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.calc-field { flex:1; min-width:140px; }
+.calc-result {
+  background:var(--mint-pale); border:1px solid var(--mint-border);
+  border-radius:10px; padding:20px; text-align:center; margin-top:16px;
+}
+.calc-result-val { font-size:32px; font-weight:900; color:var(--mint); font-family:'Nunito',sans-serif; }
+.calc-result-label { font-size:13px; color:var(--text-secondary); margin-top:4px; }
+
+/* ── VET SPACE ── */
+.vs-filters { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+.vs-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.vs-sort { display:flex; gap:6px; }
+.vs-sort-btn {
+  background:transparent; border:1px solid var(--card-border);
+  color:var(--text-muted); border-radius:7px; padding:6px 12px;
+  font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.15s;
+}
+.vs-sort-btn:hover { border-color:var(--mint); color:var(--mint); }
+.vs-sort-btn.active { background:var(--mint-pale); border-color:var(--mint); color:var(--mint); font-weight:700; }
+
+/* Post form */
+.vs-post-form {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:12px; padding:18px; margin-bottom:20px; display:none;
+}
+.vs-post-form.open { display:block; }
+.vs-identity-badge { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.vs-avatar {
+  width:36px; height:36px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:800; color:#fff; flex-shrink:0;
+  letter-spacing:-0.5px;
+}
+.vs-avatar-sm {
+  width:28px; height:28px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:9px; font-weight:800; color:#fff; flex-shrink:0;
+  letter-spacing:-0.5px;
+}
+.ask-title-input {
+  width:100%; background:transparent; border:none; border-bottom:1px solid var(--card-border);
+  color:var(--text-primary); font-size:16px; font-weight:700; font-family:'Nunito',sans-serif;
+  padding-bottom:10px; margin-bottom:4px; outline:none;
+}
+.ask-title-input::placeholder { color:var(--text-muted); }
+.ask-post-btn {
+  background:var(--mint); color:var(--forest); border:none;
+  border-radius:6px; padding:9px 18px; font-size:13px; font-weight:700;
+  cursor:pointer; font-family:'DM Sans',sans-serif; flex:1;
+}
+.ask-btn {
+  background:var(--mint); color:var(--forest); border:none;
+  border-radius:8px; padding:9px 16px; font-size:13px; font-weight:700;
+  cursor:pointer; font-family:'DM Sans',sans-serif; transition:opacity 0.15s;
+}
+.ask-btn:hover { opacity:0.88; }
+
+/* Post cards */
+.vs-post {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:12px; padding:18px; margin-bottom:14px; transition:border-color 0.15s;
+}
+.vs-post:hover { border-color:var(--mint-border); }
+.vs-post-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.vs-post-meta { flex:1; }
+.vs-username { font-size:12px; font-weight:700; color:var(--text-secondary); }
+.vs-post-time { font-size:11px; color:var(--text-muted); }
+.vs-cat-badge {
+  font-size:10px; font-weight:700; padding:3px 8px; border-radius:10px;
+  background:var(--mint-pale); color:var(--mint); letter-spacing:0.3px;
+}
+.vs-post-title {
+  font-size:15px; font-weight:800; font-family:'Nunito',sans-serif;
+  color:var(--text-primary); margin-bottom:6px; line-height:1.4;
+}
+.vs-post-body { font-size:13px; color:var(--text-secondary); line-height:1.65; margin-bottom:12px; }
+.vs-post-actions { display:flex; align-items:center; gap:8px; }
+.vs-action-btn {
+  background:transparent; border:1px solid var(--card-border);
+  color:var(--text-muted); border-radius:6px; padding:5px 10px;
+  font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif;
+  transition:all 0.15s; display:flex; align-items:center; gap:4px;
+}
+.vs-action-btn:hover { border-color:var(--mint); color:var(--mint); }
+.vs-action-btn.liked { background:var(--mint-pale); border-color:var(--mint); color:var(--mint); }
+.vs-action-btn.reported { background:rgba(239,68,68,0.08); border-color:rgba(239,68,68,0.3); color:#f87171; }
+.vs-spacer { flex:1; }
+.vs-report-btn {
+  background:transparent; border:none; color:var(--text-muted);
+  font-size:11px; cursor:pointer; padding:4px 6px; opacity:0.5;
+  transition:opacity 0.15s; font-family:'DM Sans',sans-serif;
+}
+.vs-report-btn:hover { opacity:1; color:#f87171; }
+
+/* Replies */
+.vs-replies { margin-top:14px; border-top:1px solid var(--card-border); padding-top:14px; }
+.vs-reply {
+  display:flex; gap:10px; margin-bottom:12px;
+  padding-bottom:12px; border-bottom:1px dashed var(--card-border);
+}
+.vs-reply:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
+.vs-reply-body { flex:1; }
+.vs-reply-author { font-size:11px; font-weight:700; color:var(--text-secondary); margin-bottom:3px; }
+.vs-reply-text { font-size:13px; color:var(--text-secondary); line-height:1.6; }
+.vs-reply-time { font-size:10px; color:var(--text-muted); margin-top:3px; }
+.vs-reply-form { margin-top:12px; display:none; }
+.vs-reply-form.open { display:block; }
+.vs-reply-input {
+  width:100%; background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:8px; padding:9px 12px; color:var(--text-primary);
+  font-size:13px; font-family:'DM Sans',sans-serif; outline:none;
+  resize:none; min-height:60px; transition:border-color 0.15s; box-sizing:border-box;
+}
+.vs-reply-input:focus { border-color:var(--mint); }
+.vs-removed-notice {
+  font-size:12px; color:var(--text-muted); font-style:italic;
+  padding:10px; background:rgba(0,0,0,0.15); border-radius:6px;
+}
+
+/* Threaded / nested replies */
+.vs-reply-nested {
+  margin-left:38px; padding-left:12px;
+  border-left:2px solid var(--card-border);
+  margin-top:6px;
+}
+.vs-inline-reply {
+  display:flex; gap:10px; align-items:flex-end;
+  margin-top:14px; padding-top:12px; border-top:1px solid var(--card-border);
+}
+.vs-inline-input {
+  flex:1; min-height:36px; max-height:120px; height:36px;
+  padding:8px 12px; resize:none; overflow:hidden;
+  border-radius:18px; line-height:1.4;
+}
+.vs-inline-input:focus { border-color:var(--mint); overflow:auto; }
+.vs-send-btn {
+  width:34px; height:34px; border-radius:50%;
+  background:var(--mint); color:var(--forest); border:none;
+  font-size:16px; font-weight:900; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; transition:opacity 0.15s; line-height:1;
+  font-family:'DM Sans',sans-serif;
+}
+.vs-send-btn:hover { opacity:0.85; }
+@media (max-width:768px) {
+  .vs-inline-reply { gap:8px; }
+  .vs-inline-input { font-size:14px; }
+}
+.vs-reply-to-btn {
+  background:transparent; border:none; color:var(--text-muted);
+  font-size:11px; cursor:pointer; padding:2px 0; font-family:'DM Sans',sans-serif;
+  transition:color 0.15s; margin-left:2px;
+}
+.vs-reply-to-btn:hover { color:var(--mint); }
+
+/* ── NEWS FEED ── */
+.news-filters { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.news-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.news-card {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:12px; overflow:hidden; cursor:pointer; transition:border-color 0.15s;
+}
+.news-card:hover { border-color:var(--mint-border); }
+.news-thumb {
+  height:120px; background:linear-gradient(135deg, var(--forest-light), var(--forest));
+  display:flex; align-items:center; justify-content:center; font-size:40px;
+}
+.news-body { padding:14px; }
+.news-cat {
+  font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px;
+  color:var(--mint); margin-bottom:6px;
+}
+.news-headline { font-size:13px; font-weight:700; line-height:1.4; margin-bottom:6px; font-family:'Nunito',sans-serif; }
+.news-meta { font-size:11px; color:var(--text-muted); }
+
+/* ── MESSAGES VIEW ── */
+.messages-layout { display:flex; height:100%; gap:0; }
+.messages-list {
+  width:280px; border-right:1px solid var(--card-border);
+  overflow-y:auto; background:var(--forest-mid);
+}
+.message-thread {
+  padding:14px 16px; border-bottom:1px solid var(--card-border);
+  cursor:pointer; transition:background 0.15s;
+}
+.message-thread:hover { background:var(--card-bg); }
+.message-thread.active { background:var(--mint-pale); }
+.mt-name { font-size:13px; font-weight:700; margin-bottom:3px; }
+.mt-preview { font-size:12px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mt-time { font-size:10px; color:var(--text-muted); margin-top:3px; }
+.mt-unread { width:8px; height:8px; background:var(--mint); border-radius:50%; float:right; margin-top:4px; }
+.messages-chat { flex:1; display:flex; flex-direction:column; }
+.chat-header { padding:16px 20px; border-bottom:1px solid var(--card-border); }
+.chat-header-name { font-size:15px; font-weight:700; }
+.chat-header-status { font-size:12px; color:var(--mint); }
+.chat-messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px; }
+.chat-messages::-webkit-scrollbar { width:4px; }
+.chat-messages::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:2px; }
+.chat-bubble { max-width:70%; }
+.chat-bubble.mine { align-self:flex-end; }
+.bubble-text {
+  padding:10px 14px; border-radius:12px; font-size:13px; line-height:1.5;
+  background:var(--card-bg); border:1px solid var(--card-border);
+}
+.chat-bubble.mine .bubble-text { background:var(--mint); color:var(--forest); border:none; }
+.bubble-time { font-size:10px; color:var(--text-muted); margin-top:4px; padding:0 2px; }
+.chat-bubble.mine .bubble-time { text-align:right; }
+.chat-input-row {
+  padding:14px 20px; border-top:1px solid var(--card-border);
+  display:flex; gap:10px; align-items:center;
+}
+.chat-input {
+  flex:1; background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:20px; padding:10px 16px; color:var(--text-primary);
+  font-size:13px; font-family:'DM Sans',sans-serif; outline:none; transition:border-color 0.15s;
+}
+.chat-input:focus { border-color:var(--mint); }
+.chat-send {
+  background:var(--mint); color:var(--forest); border:none;
+  border-radius:50%; width:36px; height:36px; display:flex;
+  align-items:center; justify-content:center; cursor:pointer;
+  font-size:16px; transition:opacity 0.15s;
+}
+.chat-send:hover { opacity:0.85; }
+
+/* ── LEAFLET CUSTOM PINS ── */
+.custom-pin {
+  background:var(--mint); border:2px solid var(--forest);
+  border-radius:50% 50% 50% 0; width:28px; height:28px;
+  transform:rotate(-45deg); display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4);
+}
+.custom-pin-inner { transform:rotate(45deg); font-size:12px; }
+.custom-pin.corporate { background:#f4b942; }
+.custom-pin.charity { background:#e74c3c; }
+.custom-pin.equine { background:#9b59b6; }
+.custom-pin.farm { background:#e67e22; }
+
+/* ── MAP POPUP ── */
+.leaflet-popup-content-wrapper {
+  background:var(--forest-mid) !important; color:var(--text-primary) !important;
+  border:1px solid var(--card-border) !important; border-radius:10px !important;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5) !important;
+}
+.leaflet-popup-tip { background:var(--forest-mid) !important; }
+.map-popup { font-family:'DM Sans',sans-serif; min-width:200px; }
+.map-popup-name { font-weight:700; font-size:14px; margin-bottom:4px; }
+.map-popup-addr { font-size:11px; color:var(--text-muted); margin-bottom:8px; }
+.map-popup-btn {
+  background:var(--mint); color:var(--forest); border:none; border-radius:6px;
+  padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer;
+  font-family:'DM Sans',sans-serif; width:100%; transition:opacity 0.15s;
+}
+.map-popup-btn:hover { opacity:0.88; }
+
+/* Map dark styling */
+.leaflet-tile-pane { filter: brightness(0.85) saturate(0.8); }
+
+/* ── INTERESTED STATE ── */
+.pc-tag.interested { background:var(--mint-pale); border-color:var(--mint-border); color:var(--mint); font-weight:700; }
+.interest-btn.already-interested {
+  background:var(--mint-pale); color:var(--mint);
+  border:1px solid var(--mint-border); cursor:default;
+}
+.interest-btn.already-interested:hover { opacity:1; }
+.interest-timestamp { font-size:11px; color:var(--text-muted); text-align:center; margin-top:8px; }
+
+/* ── AUTH SCREEN ── */
+#auth-screen {
+  position:fixed; inset:0; background:var(--forest);
+  display:flex; align-items:center; justify-content:center;
+  z-index:1000; flex-direction:column;
+}
+.auth-card {
+  background:var(--forest-mid); border:1px solid var(--card-border);
+  border-radius:20px; padding:36px 40px; width:420px; max-width:90vw;
+}
+.auth-logo {
+  font-family:'Nunito',sans-serif; font-weight:900; font-size:32px;
+  color:var(--text-primary); margin-bottom:6px; text-align:center;
+}
+.auth-logo span { color:var(--mint); }
+.auth-tagline {
+  text-align:center; font-size:13px; color:var(--text-muted);
+  margin-bottom:28px;
+}
+.auth-tabs {
+  display:flex; gap:0; margin-bottom:24px;
+  border-bottom:1px solid var(--card-border);
+}
+.auth-tab {
+  flex:1; padding:10px; text-align:center; cursor:pointer;
+  font-size:13px; font-weight:600; color:var(--text-muted);
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+  transition:all 0.15s;
+}
+.auth-tab.active { color:var(--mint); border-bottom-color:var(--mint); }
+.auth-form { display:flex; flex-direction:column; gap:14px; }
+.auth-form-group { display:flex; flex-direction:column; gap:6px; }
+.auth-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); }
+.auth-input {
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:8px; padding:11px 14px; color:var(--text-primary);
+  font-size:14px; font-family:'DM Sans',sans-serif; outline:none;
+  transition:border-color 0.15s;
+}
+.auth-input:focus { border-color:var(--mint); }
+.auth-btn {
+  background:var(--mint); color:var(--forest); border:none;
+  border-radius:10px; padding:14px; font-size:15px; font-weight:800;
+  cursor:pointer; font-family:'Nunito',sans-serif; margin-top:4px;
+  transition:opacity 0.15s;
+}
+.auth-btn:hover { opacity:0.88; }
+.auth-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.auth-error {
+  background:rgba(220,38,38,0.1); border:1px solid rgba(220,38,38,0.3);
+  border-radius:8px; padding:10px 14px; font-size:13px; color:#f87171;
+  display:none;
+}
+.auth-error.show { display:block; }
+.auth-note {
+  text-align:center; font-size:12px; color:var(--text-muted);
+  margin-top:16px; line-height:1.5;
+}
+
+/* Loading spinner */
+.auth-loading {
+  display:inline-block; width:16px; height:16px;
+  border:2px solid rgba(13,43,31,0.3); border-top-color:var(--forest);
+  border-radius:50%; animation:spin 0.7s linear infinite;
+  vertical-align:middle; margin-right:6px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Logout button in sidebar */
+.logout-btn {
+  width:100%; background:transparent; border:1px solid var(--card-border);
+  color:var(--text-muted); border-radius:8px; padding:8px;
+  font-size:12px; font-weight:600; cursor:pointer; margin-top:8px;
+  font-family:'DM Sans',sans-serif; transition:all 0.15s;
+}
+.logout-btn:hover { border-color:rgba(220,38,38,0.4); color:#f87171; }
+
+/* ══════════════════════════════════════════════════════
+   MOBILE STYLES — max-width 768px
+   Desktop styles above are completely untouched
+   ══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── APP SHELL ── */
+  .app {
+    flex-direction: column;
+    height: 100vh; /* fallback for older iOS */
+    height: 100dvh; /* dynamic viewport height — handles mobile browser chrome */
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    flex: 1;
+    order: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+    height: 52px;
+    min-height: 52px;
+    justify-content: flex-end;
+  }
+  .topbar-title { display: none; }
+  .postcode-form { flex: 1; height: 38px; border-radius: 10px; }
+  #postcode-input { font-size: 14px; width: 100%; flex: 1; }
+  .postcode-btn { padding: 6px 14px; font-size: 13px; }
+  .distance-badge { font-size: 11px; flex-shrink: 0; }
+
+  /* ── SIDEBAR → BOTTOM TAB BAR ── */
+  .sidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 64px;
+    min-height: 64px;
+    flex-direction: row;
+    border-right: none;
+    border-top: 1px solid rgba(62,207,110,0.12);
+    order: 2;
+    z-index: 200;
+    overflow: visible;
+    background: rgba(8,22,16,0.98);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .logo, .sidebar-bottom { display: none !important; }
+
+  /* Hide ALL nav items by default on mobile — JS controls visibility */
+  .nav {
+    display: flex;
+    flex-direction: row;
+    padding: 0;
+    flex: 1;
+    overflow: hidden;
+    align-items: stretch;
+  }
+
+  /* Hide desktop nav items on mobile — replaced by JS-built tabs */
+  .nav .nav-item { display: none; }
+
+  /* Mobile tab items built by JS get this class */
+  .mob-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 5px;
+    padding: 8px 4px 6px;
+    cursor: pointer;
+    color: rgba(240,237,230,0.38);
+    transition: color 0.18s;
+    position: relative;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mob-tab.active { color: var(--mint); }
+  .mob-tab svg { flex-shrink: 0; }
+  .mob-tab-label {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+  .mob-tab-dot {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(8px);
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #ef4444;
+    display: none;
+    border: 1.5px solid rgba(8,22,16,0.98);
+  }
+  .mob-tab-dot.show { display: block; }
+
+  /* More sheet items */
+  .more-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 8px;
+    cursor: pointer;
+    color: rgba(240,237,230,0.6);
+    border-radius: 12px;
+    transition: background 0.15s, color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .more-item:active { background: rgba(62,207,110,0.08); color: var(--mint); }
+  .more-item-label { font-size: 12px; font-weight: 600; }
+
+  #map-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+  }
+
+  #leaflet-map {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    z-index: 1;
+  }
+
+  /* Practice list becomes a bottom sheet */
+  .practice-list-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 38%;
+    max-height: 38%;
+    border-radius: 16px 16px 0 0;
+    border-top: 1px solid var(--card-border);
+    border-left: none;
+    border-right: none;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
+    z-index: 10;
+    overflow-y: auto;
+  }
+
+  /* Pull handle on the sheet */
+  .practice-list-panel::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--card-border);
+    border-radius: 2px;
+    margin: 8px auto 4px;
+    flex-shrink: 0;
+  }
+
+  .panel-header { padding: 4px 14px 10px; }
+  #panel-count { font-size: 13px; }
+  .filter-pills { gap: 5px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+  .filter-pills::-webkit-scrollbar { display: none; }
+  .pill { font-size: 11px; padding: 4px 10px; white-space: nowrap; }
+
+  .practice-card {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+  .pc-name { font-size: 13px; }
+  .pc-sub { font-size: 11px; }
+
+  /* ── DRAWER → FULL SCREEN ── */
+  .drawer {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 60px !important; /* above tab bar */
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    border-left: none !important;
+    border-radius: 0 !important;
+    z-index: 150;
+    display: none;
+  }
+  .drawer.open {
+    display: flex !important;
+    flex-direction: column;
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+  .drawer-header { padding: 16px 16px 12px; }
+  .drawer-name { font-size: 18px; }
+  .drawer-body { padding: 16px; }
+  .drawer-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .drawer-stat-val { font-size: 15px; }
+  .interest-btn { padding: 13px; font-size: 14px; }
+
+  /* ── PAGE VIEWS ── */
+  .page-view {
+    padding: 16px 16px 20px;
+    height: 100%;
+    overflow-y: auto;
+  }
+  .page-title { font-size: 22px; }
+  .page-subtitle { font-size: 13px; margin-bottom: 20px; }
+
+  /* ── MESSAGES ── */
+  .messages-layout {
+    flex-direction: column;
+    height: 100%;
+  }
+  .messages-list {
+    width: 100%;
+    height: 200px;
+    min-height: 200px;
+    max-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid var(--card-border);
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .messages-chat {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .chat-input-row {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .chat-input { font-size: 14px; padding: 9px 12px; }
+  .express-interest-banner { margin: 8px 10px; }
+
+  /* ── PROFILE GRID ── */
+  .profile-grid { grid-template-columns: 1fr; }
+
+  /* ── SALARY CALCULATOR ── */
+  .salary-grid { grid-template-columns: 1fr !important; }
+
+  /* ── VET SPACE ── */
+  .vs-toolbar { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .vs-filters { gap: 5px; }
+
+  /* ── CAREER SNAPSHOT ── */
+  .snapshot-grid { grid-template-columns: 1fr !important; }
+
+  /* ── NEWS GRID ── */
+  .news-grid { grid-template-columns: 1fr !important; }
+
+  /* ── TOAST ── */
+  .toast { bottom: 72px; left: 12px; right: 12px; font-size: 13px; }
+
+  /* ── PRIVACY MODAL ── */
+  .interest-panel { border-radius: 10px; }
+
+  /* ── CONTENT AREA ── */
+  .content { overflow: hidden; flex: 1; }
+
+}
+
+/* Extra small phones */
+@media (max-width: 380px) {
+  .nav-item { font-size: 8px; min-width: 40px; }
+  .nav-icon { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+<!-- ── AUTH SCREEN ── -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">vet<span>si</span></div>
+    <div class="auth-tagline">The smarter way to hire and be hired in vet med</div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('signin')">Sign in</div>
+      <div class="auth-tab" onclick="switchAuthTab('signup')">Create account</div>
+    </div>
+
+    <!-- SIGN IN -->
+    <div id="signin-form" class="auth-form">
+      <div class="auth-form-group">
+        <label class="auth-label">Email</label>
+        <input class="auth-input" id="signin-email" type="email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div class="auth-form-group">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="signin-password" type="password" placeholder="Your password" autocomplete="current-password">
+      </div>
+      <div class="auth-error" id="signin-error"></div>
+      <button class="auth-btn" id="signin-btn" onclick="handleSignIn()">Sign in</button>
+      <div class="auth-note">New to vetsi? <span style="color:var(--mint);cursor:pointer;" onclick="switchAuthTab('signup')">Create a free account →</span></div>
+    </div>
+
+    <!-- SIGN UP -->
+    <div id="signup-form" class="auth-form" style="display:none">
+      <div class="auth-form-group">
+        <label class="auth-label">Email</label>
+        <input class="auth-input" id="signup-email" type="email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div class="auth-form-group">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="signup-password" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+      </div>
+      <div class="auth-form-group">
+        <label class="auth-label">I am a...</label>
+        <select class="auth-input" id="signup-role" style="cursor:pointer;">
+          <option value="candidate">Veterinary professional (candidate)</option>
+          <option value="hospital">Practice / hospital manager</option>
+        </select>
+      </div>
+      <div class="auth-error" id="signup-error"></div>
+      <button class="auth-btn" id="signup-btn" onclick="handleSignUp()">Create free account</button>
+      <div class="auth-note">By signing up you agree to our <span style="color:var(--mint);">Terms of Service</span> and <span style="color:var(--mint);">Privacy Policy</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="main-app" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">vet<span>si</span></div>
+
+    <nav class="nav">
+      <div class="nav-item active" data-view="map"><span class="nav-icon">🗺️</span> Explore Map</div>
+      <div class="nav-item" data-view="messages"><span class="nav-icon">💬</span> Messages <span class="nav-badge" id="msg-nav-badge" style="display:none">0</span></div>
+      <div class="nav-item" data-view="snapshot"><span class="nav-icon">⚡</span> Career Snapshot</div>
+      <div class="nav-item" data-view="salary"><span class="nav-icon">💷</span> Salary Data</div>
+      <div class="nav-item" data-view="vetspace"><span class="nav-icon">🐾</span> Vet Space</div>
+      <div class="nav-item" data-view="news"><span class="nav-icon">📰</span> Vet News</div>
+      <div class="nav-item" data-view="profile"><span class="nav-icon">👤</span> My Profile</div>
+      <div class="nav-item" data-view="settings"><span class="nav-icon">⚙️</span> Settings</div>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="profile-chip" data-view="profile" onclick="navigate('profile')">
+        <div class="avatar" id="sidebar-avatar">?</div>
+        <div class="profile-chip-info">
+          <div class="profile-chip-name" id="sidebar-name">Your profile</div>
+          <div class="profile-chip-role" id="sidebar-role">Complete your profile</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="handleSignOut()">Sign out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Explore Practices</div>
+      <div class="postcode-form" id="postcode-form-wrap">
+        <span style="color:var(--text-muted);font-size:13px;">📍</span>
+        <input type="text" id="postcode-input" placeholder="Enter your postcode…" maxlength="8">
+        <button class="postcode-btn" onclick="searchPostcode()">Go</button>
+      </div>
+      <div class="distance-badge" id="distance-info" style="display:none">📍 <span id="postcode-label"></span> <span style="opacity:0.5;cursor:pointer;font-size:11px;" onclick="clearPostcode()">✕ clear</span></div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- MAP VIEW -->
+      <div id="map-view">
+        <div id="leaflet-map"></div>
+        <div class="practice-list-panel">
+          <div class="panel-header">
+            <div class="panel-header-row">
+              <h3 id="panel-count">26 practices in York</h3>
+              <div class="info-icon-wrap">
+                <div class="info-icon">i</div>
+                <div class="info-tooltip">
+                  Practice information — including ownership, species seen, RCVS accreditation status, and contact details — is pulled from publicly available sources including the RCVS Find a Vet register. Data may not be fully up to date or accurate. Always verify details directly with a practice before making any decisions.
+                </div>
+              </div>
+            </div>
+            <div class="filter-pills">
+              <button class="pill active" data-filter="all">All</button>
+              <button class="pill" data-filter="hiring">Hiring</button>
+              <button class="pill" data-filter="independent">Independent</button>
+              <button class="pill" data-filter="gp">Small Animal</button>
+              <button class="pill" data-filter="equine">Equine</button>
+              <button class="pill" data-filter="farm">Farm</button>
+              <button class="pill" data-filter="emergency">Emergency</button>
+              <button class="pill" data-filter="referral">Referral</button>
+              <button class="pill" data-filter="charity">Charity</button>
+            </div>
+          </div>
+          <div id="practice-list"></div>
+        </div>
+        <!-- DRAWER as flex sibling inside map-view — never overlaps map -->
+        <div class="drawer" id="drawer">
+          <div class="drawer-header">
+            <div class="drawer-close" onclick="closeDrawer()">&#x2715;</div>
+            <div class="drawer-name" id="d-name">Practice Name</div>
+            <div class="drawer-addr" id="d-addr"></div>
+            <div class="drawer-pills" id="d-pills"></div>
+          </div>
+          <div class="drawer-body">
+            <!-- JOB ADVERT LISTING — shown when practice has published advert -->
+            <div id="d-job-listing" style="display:none;">
+              <div class="drawer-section">
+                <h4>Current Opening</h4>
+                <div class="drawer-job-listing" onclick="openAdvertOverlay()">
+                  <div class="djl-header">
+                    <div class="djl-icon">📋</div>
+                    <div>
+                      <div class="djl-title" id="djl-role-title">Veterinary Surgeon</div>
+                      <div class="djl-meta" id="djl-role-meta">View full job advert</div>
+                    </div>
+                    <span class="djl-badge">Hiring</span>
+                    <span class="djl-arrow">›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="drawer-section">
+              <h4>Overview</h4>
+              <div class="drawer-grid" id="d-stats"></div>
+            </div>
+            <button class="interest-btn" id="d-interest-btn" onclick="openModal()">Express Interest &#x2192;</button>
+            <button class="message-btn" id="d-message-btn" onclick="openMessagePanel()">💬 Send a message</button>
+
+            <!-- NOT ON VETSI panel -->
+            <div class="not-on-vetsi" id="not-on-vetsi-panel">
+              <div class="not-on-vetsi-ico">📭</div>
+              <div class="not-on-vetsi-title">This practice isn't on vetsi yet</div>
+              <div class="not-on-vetsi-body">Your message won't reach them — they haven't claimed their profile. Hit Express Interest instead and we'll send them a notification letting them know a vet is interested. That's often what gets practices to join.</div>
+              <button class="not-on-vetsi-cta" onclick="closeMessagePanel(); openModal()">Express Interest instead →</button>
+            </div>
+
+            <!-- MESSAGE COMPOSER panel -->
+            <div class="message-panel" id="message-composer-panel">
+              <h3>Send a message</h3>
+              <div class="message-panel-note">💡 Sending a message shares your specialty, experience and bio with this practice. Your name and contact details stay private unless you've chosen Full profile visibility.</div>
+              <textarea id="message-composer-input" placeholder="Introduce yourself or ask a question…" rows="3"></textarea>
+              <div class="modal-actions">
+                <button class="modal-btn" onclick="closeMessagePanel()">Cancel</button>
+                <button class="modal-btn primary" id="message-composer-send" onclick="submitDirectMessage()">Send message</button>
+              </div>
+            </div>
+
+            <div class="interest-panel" id="interest-panel">
+              <h3>Express interest</h3>
+              <p id="modal-practice-name">How much of your profile would you like this practice to see?</p>
+              <div class="privacy-option selected" data-priv="anon" onclick="selectPrivacy(this)">
+                <div class="privacy-label">&#x1F47B; Anonymous</div>
+                <div class="privacy-desc">Practice sees only your specialty and years of experience. No name or contact info.</div>
+              </div>
+              <div class="privacy-option" data-priv="semi" onclick="selectPrivacy(this)">
+                <div class="privacy-label">&#x1F513; Semi-visible</div>
+                <div class="privacy-desc">Practice sees your name, specialty, experience and your written bio. No contact details yet.</div>
+              </div>
+              <div class="privacy-option" data-priv="full" onclick="selectPrivacy(this)">
+                <div class="privacy-label">&#x2705; Full profile</div>
+                <div class="privacy-desc">Practice receives your full Career Snapshot including email and phone number.</div>
+              </div>
+              <div class="modal-actions">
+                <button class="modal-btn" onclick="closeModal()">Cancel</button>
+                <button class="modal-btn primary" onclick="submitInterest()">Send interest</button>
+              </div>
+            </div>
+
+            <div class="drawer-section" id="d-species-section">
+              <h4>Species seen</h4>
+              <div class="species-pills" id="d-species"></div>
+            </div>
+            <div class="drawer-section" id="d-reviews-section" style="display:none;">
+              <h4>Google Reviews</h4>
+              <div id="d-reviews"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADVERT OVERLAY — fixed overlay sized to drawer via JS -->
+      <div class="advert-overlay-backdrop" id="advert-overlay-backdrop" onclick="closeAdvertOverlay()" style="display:none;position:fixed;inset:0;z-index:199;"></div>
+      <div class="advert-overlay" id="advert-overlay">
+        <div class="advert-overlay-header">
+          <button onclick="closeAdvertOverlay()" style="background:var(--card-bg);border:1px solid var(--card-border);color:var(--text-secondary);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">← Back</button>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="advert-overlay-name"></div>
+            <div style="font-size:11px;color:var(--text-muted);" id="advert-overlay-addr"></div>
+          </div>
+          <button onclick="closeAdvertOverlay(); setTimeout(openModal, 100);" style="background:var(--mint);color:var(--forest);border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">Express Interest →</button>
+        </div>
+        <div class="advert-overlay-body" id="advert-overlay-body">
+          <div style="padding:40px;text-align:center;color:var(--text-muted);">Loading advert…</div>
+        </div>
+      </div>
+
+      <!-- MESSAGES VIEW -->
+      <div id="messages-view" class="page-view">
+        <div class="messages-layout">
+          <div class="messages-list" id="messages-list"></div>
+          <div class="messages-chat" id="chat-panel">
+            <div class="chat-header">
+              <div class="chat-header-name" id="chat-name">Select a conversation</div>
+              <div class="chat-header-status" id="chat-header-status">vetsi · End-to-end private</div>
+            </div>
+            <div id="express-interest-banner"></div>
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="chat-input-row">
+              <input class="chat-input" id="chat-input" type="text" placeholder="Type a message…">
+              <button class="chat-send" onclick="sendMessage()">➤</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SNAPSHOT VIEW -->
+      <div id="snapshot-view" class="page-view">
+        <div class="page-title">Career Snapshot</div>
+        <div class="page-subtitle">Your shareable professional card for practices on vetsi</div>
+        <div class="snapshot-card" id="snapshot-card">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+            <div class="profile-avatar-big" id="snap-avatar">?</div>
+            <div>
+              <div class="snapshot-name" id="snap-name">—</div>
+              <div class="snapshot-title" id="snap-role"></div>
+              <div style="font-size:12px;color:var(--text-muted)" id="snap-location"></div>
+            </div>
+          </div>
+          <div class="snapshot-row">
+            <div class="snapshot-item">
+              <div class="snapshot-item-val" id="snap-exp">—</div>
+              <div class="snapshot-item-label">Experience</div>
+            </div>
+            <div class="snapshot-item">
+              <div class="snapshot-item-val" id="snap-salary">—</div>
+              <div class="snapshot-item-label">Salary target</div>
+            </div>
+            <div class="snapshot-item">
+              <div class="snapshot-item-val" id="snap-schedule">—</div>
+              <div class="snapshot-item-label">Preferred schedule</div>
+            </div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px;">Qualifications</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="snap-quals"></div>
+          </div>
+          <div style="margin-bottom:20px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px;">Looking for</div>
+            <div style="font-size:13px;color:var(--text-secondary)" id="snap-looking"></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <button class="snapshot-link" onclick="copySnapshotLink()">🔗 Copy shareable link</button>
+            <div style="font-size:11px;color:var(--text-muted)" id="snap-profile-url">vetsi.co.uk/vet/—</div>
+          </div>
+        </div>
+        <div id="snap-toast" style="margin-top:12px;opacity:0;font-size:13px;color:var(--mint);transition:opacity 0.3s;">✅ Link copied to clipboard!</div>
+        <div style="margin-top:20px;font-size:13px;color:var(--text-muted);">Your Career Snapshot is generated from your profile. <span style="color:var(--mint);cursor:pointer;" onclick="navigate('profile')">Edit your profile →</span></div>
+      </div>
+
+      <!-- SALARY VIEW -->
+      <div id="salary-view" class="page-view">
+        <div class="page-title">Salary Calculator</div>
+        <div class="page-subtitle">See current UK salary benchmarks for your role and region</div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div class="form-group">
+              <label class="form-label">Practice type</label>
+              <select class="form-select" id="v2-sal-type">
+                <option value="small_animal">Small Animal</option>
+                <option value="mixed">Mixed Practice</option>
+                <option value="equine">Equine</option>
+                <option value="farm">Farm / Large Animal</option>
+                <option value="emergency">Emergency & Critical Care</option>
+                <option value="referral">Referral / Specialist</option>
+                <option value="exotic">Exotics</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Experience level</label>
+              <select class="form-select" id="v2-sal-exp">
+                <option value="new_grad">New Graduate</option>
+                <option value="1_2">1–2 years</option>
+                <option value="3_5">3–5 years</option>
+                <option value="5_10">5–10 years</option>
+                <option value="10_plus">10+ years</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Region</label>
+              <select class="form-select" id="v2-sal-region">
+                <option value="london">London</option>
+                <option value="south_east">South East</option>
+                <option value="south_west">South West</option>
+                <option value="east_england">East of England</option>
+                <option value="east_midlands">East Midlands</option>
+                <option value="west_midlands">West Midlands</option>
+                <option value="yorkshire">Yorkshire</option>
+                <option value="north_west">North West</option>
+                <option value="north_east">North East</option>
+                <option value="scotland">Scotland</option>
+                <option value="wales">Wales</option>
+                <option value="northern_ireland">Northern Ireland</option>
+              </select>
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end;">
+              <button class="save-btn" style="width:100%;margin:0;" onclick="v2LookupSalary()">Show salary →</button>
+            </div>
+          </div>
+
+          <div id="v2-sal-result" style="display:none;background:#0d2b1f;border-radius:12px;padding:20px;border:1px solid #3ecf6e;">
+            <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:14px;">
+              <div style="text-align:center;">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#3ecf6e;margin-bottom:4px;">Typical salary</div>
+                <div style="font-size:34px;font-weight:900;color:#f0ede6;font-family:'Nunito',sans-serif;" id="v2-sal-avg">£45,000</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#3ecf6e;margin-bottom:4px;">Market range</div>
+                <div style="font-size:18px;font-weight:700;color:#f0ede6;" id="v2-sal-range">£40,000 – £52,000</div>
+              </div>
+            </div>
+            <div style="font-size:12px;color:rgba(240,237,230,0.75);line-height:1.65;" id="v2-sal-context"></div>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(62,207,110,.2);font-size:11px;color:rgba(240,237,230,.45);">Base salary excluding benefits. Practices offering CPD, flexible working and fee-paid registration typically pay at the mid-range or above.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Am I being paid fairly?</div>
+          <div class="card-sub" style="margin-bottom:12px;">Use the calculator above to check your salary against the current UK market. If you're below the typical range for your role and region, it may be worth having a conversation with your practice — or exploring what else is out there.</div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+            <strong>Things that can justify above-market pay:</strong> certificate holder, specialist interest area, management responsibility, certificate supervision, no OOH commitment from the practice side.<br><br>
+            <strong>Things that often suppress salary:</strong> working for a charity practice, remote rural location, very small team, part-time contract.
+          </div>
+        </div>
+      </div>
+
+      <!-- VET SPACE VIEW -->
+      <div id="vetspace-view" class="page-view">
+        <div class="page-title">Vet Space 🐾</div>
+        <div class="page-subtitle">Anonymous discussion for UK vets — your identity is never revealed</div>
+
+        <!-- Category filter -->
+        <div class="vs-filters" id="vs-filters">
+          <button class="pill active" data-cat="all">All</button>
+          <button class="pill" data-cat="case">🩺 Case Discussion</button>
+          <button class="pill" data-cat="salary">💷 Salary & Pay</button>
+          <button class="pill" data-cat="cpd">📚 CPD</button>
+          <button class="pill" data-cat="culture">🏥 Practice Culture</button>
+          <button class="pill" data-cat="locum">🔄 Locum Life</button>
+          <button class="pill" data-cat="wellbeing">🧠 Wellbeing</button>
+          <button class="pill" data-cat="career">💼 Career Moves</button>
+          <button class="pill" data-cat="general">🐾 General</button>
+        </div>
+
+        <!-- Sort + New post -->
+        <div class="vs-toolbar">
+          <div class="vs-sort">
+            <button class="vs-sort-btn active" data-sort="trending" onclick="setVsSort(this)">🔥 Trending</button>
+            <button class="vs-sort-btn" data-sort="new" onclick="setVsSort(this)">🆕 New</button>
+            <button class="vs-sort-btn" data-sort="top" onclick="setVsSort(this)">⭐ Top</button>
+          </div>
+          <button class="ask-btn" id="new-post-btn" onclick="togglePostForm()">+ New post</button>
+        </div>
+
+        <!-- New post form -->
+        <div class="vs-post-form" id="vs-post-form">
+          <div class="vs-identity-badge" id="vs-identity-preview" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(62,207,110,0.06);border:1px solid rgba(62,207,110,0.15);border-radius:8px;margin-bottom:14px;">
+            <div class="vs-avatar" id="vs-my-avatar" style="background:#3ecf6e;flex-shrink:0;">?</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--text-primary);" id="vs-my-username">Loading…</div>
+              <div style="font-size:11px;color:var(--text-muted);">Your anonymous identity in Vet Space</div>
+            </div>
+          </div>
+          <select class="form-select" id="vs-cat-select" style="margin-bottom:10px;">
+            <option value="general">🐾 General</option>
+            <option value="case">🩺 Case Discussion</option>
+            <option value="salary">💷 Salary & Pay</option>
+            <option value="cpd">📚 CPD & Development</option>
+            <option value="culture">🏥 Practice Culture</option>
+            <option value="locum">🔄 Locum Life</option>
+            <option value="wellbeing">🧠 Wellbeing</option>
+            <option value="career">💼 Career Moves</option>
+          </select>
+          <input class="ask-title-input" id="vs-post-title" placeholder="What's your question or topic?">
+          <textarea class="form-textarea" id="vs-post-body" placeholder="Add more detail (optional)…" rows="3" style="margin-top:8px;"></textarea>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="modal-btn" onclick="togglePostForm()">Cancel</button>
+            <button class="ask-post-btn" id="vs-submit-btn" onclick="submitPost()">Post anonymously</button>
+          </div>
+        </div>
+
+        <!-- Posts list -->
+        <div id="vs-posts-list">
+          <div style="text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px;">
+            <div style="font-size:28px;margin-bottom:10px;">🐾</div>Loading Vet Space…
+          </div>
+        </div>
+      </div>
+
+      <!-- NEWS VIEW -->
+      <div id="news-view" class="page-view">
+        <div class="page-title">Vet News 📰</div>
+        <div class="page-subtitle">Industry updates, career insights and clinical reads</div>
+        <div class="news-filters" id="news-filters">
+          <button class="pill active" data-news="all">All</button>
+          <button class="pill" data-news="industry">Industry</button>
+          <button class="pill" data-news="careers">Careers</button>
+          <button class="pill" data-news="wellbeing">Wellbeing</button>
+          <button class="pill" data-news="clinical">Clinical</button>
+        </div>
+        <div class="news-grid" id="news-grid">
+          <div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px;">
+            <div style="font-size:28px;margin-bottom:10px;">📰</div>
+            Loading latest vet news…
+          </div>
+        </div>
+      </div>
+
+      <!-- PROFILE VIEW -->
+      <div id="profile-view" class="page-view">
+        <div class="page-title">My Profile</div>
+        <div class="page-subtitle">This information helps us match you to the right practices</div>
+
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+            <div class="profile-avatar-big" id="profile-avatar-big">?</div>
+            <div>
+              <div style="font-size:18px;font-weight:800;font-family:'Nunito',sans-serif;" id="profile-display-name">—</div>
+              <div style="font-size:13px;color:var(--text-muted);" id="profile-url-display">vetsi.co.uk/vet/—</div>
+            </div>
+          </div>
+          <div class="profile-grid">
+            <div class="form-group">
+              <label class="form-label">First name</label>
+              <input class="form-input" id="p-first" value="">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last name</label>
+              <input class="form-input" id="p-last" value="">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input class="form-input" id="p-email" type="email" value="">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input class="form-input" id="p-phone" value="">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Location / Postcode</label>
+              <input class="form-input" id="p-location" value="">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Years of experience</label>
+              <select class="form-select" id="p-exp">
+                <option>0–1 years</option>
+                <option>1–2 years</option>
+                <option>2–3 years</option>
+                <option selected>4–6 years</option>
+                <option>7–10 years</option>
+                <option>10+ years</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Primary specialty</label>
+              <select class="form-select" id="p-spec">
+                <option value="" selected>Select specialty…</option>
+                <option>Small Animal GP</option>
+                <option>Equine</option>
+                <option>Farm Animal</option>
+                <option>Mixed Practice</option>
+                <option>Exotics</option>
+                <option>Referral Specialist</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Preferred schedule</label>
+              <select class="form-select" id="p-schedule">
+                <option value="" selected>Select schedule…</option>
+                <option>5-day week</option>
+                <option>4-day week</option>
+                <option>Part-time</option>
+                <option>Flexible / Locum</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Salary target (£k)</label>
+              <input class="form-input" id="p-salary" value="">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Max commute (miles)</label>
+              <input class="form-input" id="p-commute" value="30" type="number">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">About me (shown to practices)</label>
+            <textarea class="form-textarea" id="p-bio"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Qualifications (comma-separated)</label>
+            <input class="form-input" id="p-quals" value="">
+          </div>
+          <div style="display:flex;align-items:center;gap:0;">
+            <button class="save-btn" onclick="saveProfile()">Save profile</button>
+            <div class="save-toast" id="save-toast">✅ Saved!</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS VIEW -->
+      <div id="settings-view" class="page-view">
+        <div class="page-title">Settings</div>
+        <div class="page-subtitle">Manage your account, privacy and notifications</div>
+
+        <!-- Account -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-title">Account</div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label class="form-label">Email address</label>
+            <div style="display:flex;gap:8px;">
+              <input class="form-input" id="s-email" type="email" style="flex:1;" placeholder="your@email.com">
+              <button class="save-btn" style="margin:0;white-space:nowrap;" onclick="candUpdateEmail()">Update</button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label class="form-label">New password</label>
+            <div style="display:flex;gap:8px;">
+              <input class="form-input" id="s-password" type="password" style="flex:1;" placeholder="Leave blank to keep current">
+              <button class="save-btn" style="margin:0;white-space:nowrap;" onclick="candUpdatePassword()">Update</button>
+            </div>
+          </div>
+          <div style="padding-top:12px;border-top:1px solid var(--card-border);">
+            <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">Delete account</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Permanently removes your account and all data. Cannot be undone.</div>
+            <button class="save-btn" style="margin:0;background:transparent;border:1px solid rgba(239,68,68,.4);color:#ef4444;" onclick="candDeleteAccount()">Delete my account</button>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-title">Notifications</div>
+          <div class="toggle-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--card-border);">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);">A practice views my profile</div>
+              <div style="font-size:11px;color:var(--text-muted);">Email when a hospital opens your Career Snapshot</div>
+            </div>
+            <label class="toggle-switch"><input type="checkbox" id="s-notif-view" checked onchange="saveCandNotifSettings()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+          <div class="toggle-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--card-border);">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);">A practice messages me</div>
+              <div style="font-size:11px;color:var(--text-muted);">Email when you receive a new message</div>
+            </div>
+            <label class="toggle-switch"><input type="checkbox" id="s-notif-message" checked onchange="saveCandNotifSettings()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+          <div class="toggle-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);">New practices near me</div>
+              <div style="font-size:11px;color:var(--text-muted);">Weekly digest of new hiring practices in your area</div>
+            </div>
+            <label class="toggle-switch"><input type="checkbox" id="s-notif-nearby" onchange="saveCandNotifSettings()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+        </div>
+
+        <!-- Privacy -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-title">Privacy</div>
+          <div class="toggle-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--card-border);">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);">Appear in vetsi searches</div>
+              <div style="font-size:11px;color:var(--text-muted);">Allow practices to find your profile when browsing candidates</div>
+            </div>
+            <label class="toggle-switch"><input type="checkbox" id="s-priv-visible" checked onchange="saveCandPrivSettings()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+        <!-- About -->
+        <div class="card">
+          <div class="card-title">About vetsi</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:10px;">vetsi is free for vets, always. We never share your personal data with practices without your explicit consent. Your privacy settings above control exactly what each practice can see.</div>
+          <div style="font-size:12px;color:var(--text-muted);">Questions? <a href="mailto:hello@vetsi.co.uk" style="color:var(--mint);">hello@vetsi.co.uk</a></div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+  <!-- MOBILE MORE MENU -->
+  <div id="mobile-more-overlay" onclick="closeMobileMore()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;"></div>
+  <div id="mobile-more-sheet" style="display:none;position:fixed;left:0;right:0;bottom:64px;background:#0d2b1f;border-radius:20px 20px 0 0;z-index:301;border-top:1px solid rgba(62,207,110,0.2);padding:8px 0 24px;">
+    <div style="width:36px;height:4px;background:rgba(62,207,110,0.2);border-radius:2px;margin:10px auto 20px;"></div>
+    <div id="mobile-more-items" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:0 12px;"></div>
+  </div>
+
+</div><!-- /main-app -->
+
+<!-- DRAWER -->
+
+<script>
+// ─────────────────────────────────────────
+//  DATA — loaded from Supabase
+// ─────────────────────────────────────────
+let PRACTICES = []; // populated by loadHospitals()
+
+// Maps a Supabase hospital row to the shape the UI expects
+function rowToPractice(row) {
+  // Ensure practice_type is always an array
+  const rawTypes = row.practice_type;
+  const types = Array.isArray(rawTypes)
+    ? rawTypes
+    : typeof rawTypes === 'string' && rawTypes.startsWith('{')
+      ? rawTypes.replace(/[{}]/g,'').split(',').map(s => s.trim().replace(/^"|"$/g,''))
+      : typeof rawTypes === 'string' && rawTypes
+        ? [rawTypes]
+        : [];
+  let icon = '🐾';
+  if (types.includes('Equine')) icon = '🐎';
+  else if (types.includes('Farm')) icon = '🐄';
+  else if (types.includes('Emergency')) icon = '🚨';
+  else if (types.includes('Referral')) icon = '🏥';
+  else if (types.includes('Charity')) icon = '❤️';
+
+  return {
+    id: row.id,
+    name: row.name,
+    address: row.address,
+    postcode: row.postcode,
+    lat: row.lat,
+    lng: row.lng,
+    practice_type: types,           // array e.g. ['Small Animal GP', 'Equine']
+    species: Array.isArray(row.species)
+      ? row.species
+      : typeof row.species === 'string' && row.species.startsWith('{')
+        ? row.species.replace(/[{}]/g,'').split(',').map(s => s.trim().replace(/^"|"$/g,''))
+        : [],
+    ownership: row.ownership || 'Independent',
+    group: row.corporate_group,
+    rating: row.google_rating || null,
+    reviews: row.google_review_count || null,
+    website: row.website,
+    phone: row.phone,
+    rcvs_accredited: row.rcvs_accredited || false,
+    rcvs_url: row.rcvs_url || null,
+    hiring: row.is_hiring || false,
+    claimed: row.claimed || false,
+    salary: row.salary_range || '—',
+    schedule: row.schedule || '—',
+    teamSize: row.team_size || '—',
+    icon,
+    userReviews: []
+    // email is deliberately excluded — never loaded into frontend
+  };
+}
+
+const COLS = 'id, name, address, postcode, lat, lng, website, phone, practice_type, species, ownership, corporate_group, google_rating, google_review_count, rcvs_accredited, rcvs_url, is_hiring, claimed, salary_range, schedule, team_size';
+
+// Load only practices visible in the current map bounds
+async function loadHospitalsInView() {
+  const bounds = map.getBounds();
+  const minLat = bounds.getSouth();
+  const maxLat = bounds.getNorth();
+  const minLng = bounds.getWest();
+  const maxLng = bounds.getEast();
+
+  const { data, error } = await sb.from('hospitals')
+    .select(COLS)
+    .gte('lat', minLat).lte('lat', maxLat)
+    .gte('lng', minLng).lte('lng', maxLng)
+    .not('lat', 'is', null)
+    .limit(200);
+
+  if (error) { console.error('Failed to load hospitals:', error.message); return; }
+
+  const newPractices = (data || []).map(rowToPractice);
+
+  // Merge into PRACTICES — add only ones we don't already have
+  let added = 0;
+  newPractices.forEach(p => {
+    if (!PRACTICES.find(x => x.id === p.id)) {
+      PRACTICES.push(p);
+      addMarker(p);
+      added++;
+    }
+  });
+
+  if (added > 0) renderPracticeList();
+}
+
+function addMarker(p) {
+  if (markers[p.id]) return; // already exists
+  const types = p.practice_type || [];
+  const pinColor = p.hiring ? '#f4b942'
+    : p.ownership === 'Independent' ? '#3ecf6e'
+    : types.includes('Equine') ? '#9b59b6'
+    : types.includes('Farm') ? '#e67e22'
+    : types.includes('Charity') ? '#e74c3c'
+    : '#aab8b0';
+
+  const pinHtml = p.hiring
+    ? `<div style="position:relative;width:32px;height:32px;">
+        <div style="background:#f4b942;border:2.5px solid #0d2b1f;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(244,185,66,0.7),0 2px 8px rgba(0,0,0,0.4);">
+          <span style="font-size:15px;">⭐</span>
+        </div>
+      </div>`
+    : `<div style="background:${pinColor};border:2.5px solid #0d2b1f;border-radius:50% 50% 50% 0;width:26px;height:26px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);">
+        <span style="transform:rotate(45deg);font-size:11px;">${p.icon}</span>
+      </div>`;
+
+  const icon = L.divIcon({
+    className: '',
+    html: pinHtml,
+    iconAnchor: p.hiring ? [16, 16] : [13, 26],
+    popupAnchor: [0, p.hiring ? -20 : -28]
+  });
+
+  const marker = L.marker([p.lat, p.lng], { icon, zIndexOffset: p.hiring ? 1000 : 0 }).addTo(map);
+  markers[p.id] = marker;
+
+  const hiringLabel = p.hiring ? ' · <span style="color:#f4b942;font-weight:700;">⭐ Hiring now</span>' : '';
+  const popupHtml = `<div class="map-popup">
+    <div class="map-popup-name">${p.name}</div>
+    <div class="map-popup-addr">${p.postcode} · ${p.ownership === 'Independent' ? '🟢 Independent' : '🟡 ' + (p.group || p.ownership)}</div>
+    ${p.rating ? `<div style="font-size:12px;color:#f4b942;margin-bottom:8px;">★ ${p.rating}${p.reviews ? ` (${p.reviews} reviews)` : ''}${hiringLabel}</div>` : p.hiring ? `<div style="font-size:12px;margin-bottom:8px;color:#f4b942;font-weight:700;">⭐ Hiring now</div>` : ''}
+    <button class="map-popup-btn" onclick="openDrawer('${p.id}')">View practice →</button>
+  </div>`;
+  marker.bindPopup(popupHtml);
+  marker.on('click', () => { setTimeout(() => highlightCard(p.id), 100); });
+}
+
+// ─────────────────────────────────────────
+//  MAP INIT
+// ─────────────────────────────────────────
+async function initMap() {
+  // Start over Leamington Spa — central England, good density of practices
+  map = L.map('leaflet-map', { center:[52.29, -1.53], zoom:13, zoomControl:true });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  document.getElementById('practice-list').innerHTML =
+    '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">Loading practices…</div>';
+
+  // Load initial viewport
+  await loadHospitalsInView();
+
+  // Debounced reload on pan/zoom
+  let moveTimer = null;
+  map.on('moveend', () => {
+    clearTimeout(moveTimer);
+    moveTimer = setTimeout(() => loadHospitalsInView(), 400);
+  });
+}
+
+// ─────────────────────────────────────────
+//  VET NEWS — LIVE RSS FEEDS
+// ─────────────────────────────────────────
+const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
+
+const NEWS_SOURCES = [
+  { url: 'https://www.vettimes.co.uk/feed/',            name: 'Vet Times',         emoji: '📰', cat: 'industry' },
+  { url: 'https://vetsurgeon.org/b/veterinary-news.rss',name: 'VetSurgeon',        emoji: '🩺', cat: 'clinical' },
+  { url: 'https://www.bva.co.uk/news-and-blog/feed/',   name: 'BVA',               emoji: '🏛️', cat: 'industry' },
+  { url: 'https://www.rcvs.org.uk/feed/',               name: 'RCVS',              emoji: '📋', cat: 'industry' },
+  { url: 'https://vetreport.net/category/resources/feed/', name: 'Vet Report',     emoji: '🐾', cat: 'careers' },
+  { url: 'https://vetvoices.co.uk/blog-feed.xml',       name: 'Vet Voices UK',     emoji: '💬', cat: 'wellbeing' },
+];
+
+let allNewsArticles = [];
+let newsLoaded = false;
+
+const QA_DATA = [
+  { id:1, question:"I'm thinking about going locum — what's been people's experience with income stability?", author:"Anonymous Vet", time:"2 days ago", likes:14, answers:[
+    { author:"7 yrs SA GP", text:"I went locum 3 years ago and haven't looked back. First 3 months were patchy but once you're on 4-5 agencies' books it evens out. Summer and Christmas are always busy. I earn more now than I did in a 5-day salaried role.", time:"1 day ago" },
+    { author:"Locum Vet — Yorkshire", text:"Key tip: get your Ltd Co set up before you start. IR35 is a minefield so speak to a vet-specialist accountant first (Provestor or Unsworth are good). Income can be brilliant but you lose sick pay and you need to self-fund CPD.", time:"18 hrs ago" },
+    { author:"Recent convert", text:"I did it recently and honestly the freedom is amazing. I work 3 days a week, earn more than I did full-time, and spend the rest on my certificate. Not for everyone but if you're organised it works.", time:"6 hrs ago" }
+  ]},
+  { id:2, question:"Certificate vs RCVS Advanced Practitioner — which is worth it for a 4-year GP?", author:"Anonymous Vet", time:"5 days ago", likes:9, answers:[
+    { author:"CertAVP Medicine", text:"I did my CertAVP in medicine at 4 years and it completely changed my clinical confidence. It's modular so you can pace it. Cost me about £4k self-funded but immediately got a £6k salary bump. ROI is real.", time:"4 days ago" },
+    { author:"GP Vet — 8 yrs", text:"RCVS AP is great for recognition but the certificate pathway is quicker and often more practically useful. Depends on your specialism — for soft tissue surgery the Cambridge Cert is outstanding.", time:"3 days ago" }
+  ]},
+  { id:3, question:"Honest views on working for CVS vs VetPartners vs independent — where are vets happiest?", author:"Anonymous Vet", time:"1 week ago", likes:22, answers:[
+    { author:"Worked all three", text:"CVS: very corporate, CPD budget is fixed, clinical freedom varies hugely by practice manager. VetPartners: better culture, they've kept more local identity. Independent: if it's a good one, unbeatable. If it's a bad one, there's no HR to escalate to. Generalising massively here.", time:"6 days ago" },
+    { author:"IVC Evidensia vet", text:"I'd add IVC — their clinical pathway is underrated. They invest properly in referral pathways and the European connection is real. Salary is competitive. But the admin load is heavier than small independents.", time:"5 days ago" }
+  ]},
+  { id:4, question:"Anyone regret specialising? I'm 6 years GP and tempted to go into referral medicine.", author:"Anonymous Vet", time:"2 weeks ago", likes:7, answers:[
+    { author:"Internal Medicine Resident", text:"Not one day. But be realistic: it's another 3-5 years of lower salary through residency, the competition is fierce, and you need publications. Go into it for the right reasons, not just because GP is burning you out.", time:"2 weeks ago" },
+    { author:"GP Vet — 12 yrs", text:"I considered it and didn't. No regrets either way — I found my niche in GP doing preventative medicine and client education, earning well, no on-call. Specialism isn't the only path to job satisfaction.", time:"1 week ago" }
+  ]}
+];
+
+// Messages — loaded from Supabase
+let MSG_THREADS = []; // populated by loadMessages()
+let activeConversation = null; // { hospitalId, hospitalName, messages[] }
+
+// Postcode → lat/lng lookup for user location search (UK district centroids)
+const YORK_POSTCODES = {
+  "YO1": [53.9590, -1.0815], "YO10": [53.9465, -1.0625], "YO11": [54.2796, -0.4042],
+  "YO12": [54.2796, -0.4042], "YO19": [53.9389, -1.0098], "YO23": [53.9101, -1.1258],
+  "YO24": [53.9536, -1.1063], "YO26": [53.9711, -1.1198], "YO30": [54.0051, -1.0982],
+  "YO31": [53.9751, -1.0559], "YO32": [54.0165, -1.0685], "YO41": [53.9888, -0.9225],
+  "YO42": [53.9286, -0.7788], "YO43": [53.9098, -0.7215], "YO51": [54.0938, -1.4001],
+  "YO60": [54.1021, -0.9785], "YO61": [54.1188, -1.1890]
+};
+
+// ─────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────
+let map, userMarker, userLatLng = null;
+let activeFilter = "all";
+let activeDrawerPractice = null;
+let selectedPrivacy = "anon";
+let drawerPracticeClaimed = false;
+let activeMsgThread = 0;
+let activeNewsFilter = "all";
+let markers = {};
+let filteredPractices = [...PRACTICES];
+
+// Vet Space state
+let vsMyIdentity = null;
+let vsPosts = [];
+let vsFilter = 'all';
+let vsSort = 'trending';
+let vsMyLikes = new Set();
+let vsOpenReplies = new Set();
+let vsOpenReplyReplies = new Set(); // reply IDs with reply-to-reply forms open
+
+// Profile state
+let profile = {
+  first:'', last:'', email:'', phone:'', location:'',
+  exp:'', spec:'', schedule:'',
+  salary:'', commute:'30', bio:'', quals:''
+};
+
+// ─────────────────────────────────────────
+//  NAV
+// ─────────────────────────────────────────
+let currentActiveView = 'map';
+
+function navigate(view) {
+  currentActiveView = view;
+
+  // Close modals/panels when switching views
+  // Only close the drawer if navigating away from the map
+  if (view !== 'map') {
+    document.getElementById('drawer')?.classList.remove('open');
+  }
+  document.getElementById('interest-panel')?.classList.remove('open');
+  document.getElementById('message-composer-panel')?.classList.remove('open');
+  document.getElementById('not-on-vetsi-panel')?.classList.remove('open');
+
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.view === view);
+  });
+
+  // Show/hide map vs page views
+  const mapView = document.getElementById('map-view');
+  const postcodeWrap = document.getElementById('postcode-form-wrap');
+  if (view === 'map') {
+    mapView.style.display = 'flex';
+    postcodeWrap.style.display = 'flex';
+  } else {
+    mapView.style.display = 'none';
+    postcodeWrap.style.display = 'none';
+  }
+
+  // Messages is special (no padding)
+  document.querySelectorAll('.page-view').forEach(v => {
+    v.classList.remove('active');
+    v.style.padding = '';
+  });
+
+  if (view !== 'map') {
+    const el = document.getElementById(view + '-view');
+    if (el) {
+      el.classList.add('active');
+      if (view === 'messages') el.style.padding = '0';
+    }
+  }
+
+  const titles = { map:"Explore Practices", messages:"Messages", snapshot:"Career Snapshot", salary:"Salary Calculator", vetspace:"Vet Space", news:"Vet News", profile:"My Profile", settings:"Settings" };
+  document.getElementById('topbar-title').textContent = titles[view] || 'vetsi';
+  if (view === 'settings') loadCandSettings();
+
+  // Distance label — show on map if a location is set, hide otherwise
+  const distInfo = document.getElementById('distance-info');
+  if (view === 'map' && userLatLng) {
+    distInfo.style.display = 'flex';
+  } else {
+    distInfo.style.display = 'none';
+  }
+
+  if (view === 'messages') initMessages();
+  if (view === 'news') loadNews();
+  if (view === 'vetspace') initVetSpace();
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => navigate(item.dataset.view));
+});
+
+// ─────────────────────────────────────────
+//  MAP INIT
+// ─────────────────────────────────────────
+
+// UK bounds check — lat 49-61, lng -8 to 2
+
+// ─────────────────────────────────────────
+//  POSTCODE SEARCH
+// ─────────────────────────────────────────
+async function searchPostcode() {
+  const raw = document.getElementById('postcode-input').value.trim().toUpperCase().replace(/\s+/g,'');
+  if (!raw) return;
+
+  const btn = document.querySelector('.postcode-btn');
+  btn.textContent = '…';
+  btn.disabled = true;
+
+  try {
+    // Use postcodes.io — free, no API key needed, full UK coverage
+    const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(raw)}`);
+    const json = await res.json();
+
+    let coords;
+    if (json.status === 200 && json.result) {
+      coords = [json.result.latitude, json.result.longitude];
+    } else {
+      // Try as outward code (e.g. NE1, SW1A)
+      const res2 = await fetch(`https://api.postcodes.io/outcodes/${encodeURIComponent(raw)}`);
+      const json2 = await res2.json();
+      if (json2.status === 200 && json2.result) {
+        coords = [json2.result.latitude, json2.result.longitude];
+      } else {
+        btn.textContent = 'Go';
+        btn.disabled = false;
+        showToast('⚠️ Postcode not found — try a full postcode like NE1 4ST');
+        return;
+      }
+    }
+
+    userLatLng = { lat: coords[0], lng: coords[1] };
+
+    if (userMarker) userMarker.remove();
+    userMarker = L.circleMarker([coords[0], coords[1]], {
+      radius:12, fillColor:"#3ecf6e", fillOpacity:0.3,
+      color:"#3ecf6e", weight:2
+    }).addTo(map).bindTooltip("📍 Your location").openTooltip();
+
+    map.setView([coords[0], coords[1]], 13);
+
+    // Show the label but keep input visible for new searches
+    const formatted = raw.length > 4
+      ? raw.slice(0, raw.length - 3) + ' ' + raw.slice(raw.length - 3)
+      : raw;
+    document.getElementById('postcode-label').textContent = `Distances from ${formatted}`;
+    document.getElementById('distance-info').style.display = 'flex';
+    document.getElementById('postcode-input').value = '';
+    document.getElementById('postcode-input').placeholder = 'Search another postcode…';
+
+    // Load practices in new viewport then update list
+    await loadHospitalsInView();
+    renderPracticeList();
+
+  } catch (err) {
+    console.error('Postcode lookup failed:', err);
+    showToast('⚠️ Could not look up postcode — check your connection');
+  }
+
+  btn.textContent = 'Go';
+  btn.disabled = false;
+}
+
+function clearPostcode() {
+  userLatLng = null;
+  if (userMarker) { userMarker.remove(); userMarker = null; }
+  document.getElementById('distance-info').style.display = 'none';
+  document.getElementById('postcode-input').placeholder = 'Enter your postcode…';
+  renderPracticeList();
+}
+
+document.getElementById('postcode-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') searchPostcode();
+});
+
+// ─────────────────────────────────────────
+//  DISTANCE CALCULATION
+// ─────────────────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 3958.8; // miles
+  const dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function getDist(p) {
+  if (!userLatLng) return null;
+  return haversine(userLatLng.lat, userLatLng.lng, p.lat, p.lng);
+}
+
+// ─────────────────────────────────────────
+//  PRACTICE LIST
+// ─────────────────────────────────────────
+function getFiltered() {
+  return PRACTICES.filter(p => {
+    // If location set, only list practices within 25 miles
+    if (userLatLng && getDist(p) > 25) return false;
+    if (activeFilter === "all") return true;
+    if (activeFilter === "hiring") return p.hiring;
+    if (activeFilter === "independent") return p.ownership === "Independent";
+    if (activeFilter === "gp") return p.practice_type?.includes('Small Animal GP');
+    if (activeFilter === "equine") return p.practice_type?.includes('Equine');
+    if (activeFilter === "farm") return p.practice_type?.includes('Farm');
+    if (activeFilter === "emergency") return p.practice_type?.includes('Emergency');
+    if (activeFilter === "referral") return p.practice_type?.includes('Referral');
+    if (activeFilter === "charity") return p.practice_type?.includes('Charity');
+    return true;
+  }).sort((a,b) => {
+    if (userLatLng) return getDist(a) - getDist(b);
+    if (a.hiring && !b.hiring) return -1;
+    if (!a.hiring && b.hiring) return 1;
+    return (b.reviews || 0) - (a.reviews || 0);
+  });
+}
+
+function renderPracticeList() {
+  filteredPractices = getFiltered();
+  const label = activeFilter === 'all' ? 'practices' :
+    activeFilter === 'hiring' ? 'practices hiring now' :
+    activeFilter === 'independent' ? 'independent practices' :
+    activeFilter === 'gp' ? 'small animal practices' :
+    activeFilter === 'equine' ? 'equine practices' :
+    activeFilter === 'farm' ? 'farm practices' :
+    activeFilter === 'emergency' ? 'emergency practices' :
+    activeFilter === 'referral' ? 'referral centres' :
+    activeFilter === 'charity' ? 'charity practices' : 'practices';
+  const loc = userLatLng ? ' near you' : ' in view';
+  document.getElementById('panel-count').textContent = `${filteredPractices.length.toLocaleString()} ${label}${loc}`;
+
+  const list = document.getElementById('practice-list');
+  list.innerHTML = filteredPractices.map(p => {
+    const dist = getDist(p);
+    const distStr = dist ? `<span class="pc-dist">📍 ${dist.toFixed(1)} mi</span>` : '';
+    const interestedBadge = myInterests[p.id] ? `<span class="pc-tag interested">✓ Interested</span>` : '';
+    const typeTag = p.practice_type?.length
+      ? `<span class="pc-tag">${p.practice_type[0]}</span>`
+      : '';
+    const ownershipTag = p.ownership === 'Independent'
+      ? '<span class="pc-tag independent">🟢 Independent</span>'
+      : p.group
+        ? `<span class="pc-tag">${p.group}</span>`
+        : `<span class="pc-tag">${p.ownership}</span>`;
+    const rcvsBadge = p.rcvs_accredited ? '<span class="pc-tag" style="color:var(--mint);border-color:var(--mint-border);">✓ RCVS</span>' : '';
+    const ratingStr = p.rating ? `<span class="pc-stars">★ ${p.rating}</span>` : '';
+    const hiringClass = p.hiring ? ' hiring-glow' : '';
+    const iconClass = p.hiring ? ' hiring-icon' : '';
+    const hiringBadge = p.hiring ? '<span class="pc-tag hiring">⭐ Hiring</span>' : '';
+    return `<div class="practice-card${hiringClass}" id="card-${p.id}" onclick="openDrawer('${p.id}')">
+      <div class="pc-header">
+        <div class="pc-icon${iconClass}">${p.hiring ? '⭐' : p.icon}</div>
+        <div>
+          <div class="pc-name">${p.name}</div>
+          <div class="pc-address">${p.postcode}</div>
+        </div>
+      </div>
+      <div class="pc-meta">
+        ${hiringBadge}
+        ${ownershipTag}
+        ${typeTag}
+        ${rcvsBadge}
+        ${ratingStr}
+        ${interestedBadge}
+        ${distStr}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Filter pills
+document.querySelectorAll('.pill[data-filter]').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.pill[data-filter]').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    activeFilter = pill.dataset.filter;
+    renderPracticeList();
+  });
+});
+
+function highlightCard(id) {
+  document.querySelectorAll('.practice-card').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById('card-' + id);
+  if (card) {
+    card.classList.add('active');
+    card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+}
+
+// ─────────────────────────────────────────
+//  DRAWER
+// ─────────────────────────────────────────
+function openDrawer(id) {
+  const p = PRACTICES.find(x => x.id === id || x.id === String(id));
+  if (!p) return;
+  activeDrawerPractice = p;
+  drawerPracticeClaimed = false; // reset, will check async
+
+  document.getElementById('d-name').textContent = p.name;
+
+  // Clean address — aggressively remove all postcode variants
+  let cleanAddr = p.address || '';
+  if (p.postcode) {
+    const pc = p.postcode.trim().toUpperCase();
+    const pcNoSpace = pc.replace(/\s+/g, '');
+    // Split postcode into parts for regex (e.g. "DT1 2BH" → "DT1" and "2BH")
+    const parts = pc.split(/\s+/);
+    // Remove full postcode with or without space, any number of times
+    const patterns = [
+      pc,                                    // "DT1 2BH"
+      pcNoSpace,                             // "DT12BH"
+      parts.length > 1 ? parts.join('\\s+') : null  // "DT1\s+2BH"
+    ].filter(Boolean);
+
+    for (const pattern of patterns) {
+      const re = new RegExp(`(,?\\s*${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*)+`, 'gi');
+      cleanAddr = cleanAddr.replace(re, '');
+    }
+    cleanAddr = cleanAddr.trim().replace(/,\s*$/, '').trim();
+    cleanAddr = cleanAddr + ', ' + pc;
+  }
+  document.getElementById('d-addr').textContent = cleanAddr;
+
+  // Ownership pill with tooltip for independent_or_unknown sourced data
+  const ownershipPill = p.ownership === 'Independent'
+    ? `<span class="pc-tag independent" style="position:relative;">
+        🟢 Independent
+        <span class="ownership-info" title="ⓘ">ⓘ
+          <span class="ownership-tooltip">Ownership data is pulled from publicly available sources and may not always be accurate. <a href="mailto:hello@vetsi.co.uk?subject=Incorrect info: ${encodeURIComponent(p.name)}" style="color:var(--mint)">Report incorrect info</a></span>
+        </span>
+       </span>`
+    : p.group
+      ? `<span class="pc-tag">🟡 ${p.group}</span>`
+      : `<span class="pc-tag">🟡 ${p.ownership}</span>`;
+
+  const typePills = (p.practice_type || []).map(t => `<span class="pc-tag">${t}</span>`).join('');
+  const rcvsPill = p.rcvs_accredited
+    ? `<a href="${p.rcvs_url || '#'}" target="_blank" style="text-decoration:none;"><span class="pc-tag" style="color:var(--mint);border-color:var(--mint-border);">✓ RCVS Accredited</span></a>`
+    : '';
+  const ratingPill = p.rating ? `<span class="pc-tag">★ ${p.rating}${p.reviews ? ` (${p.reviews})` : ''}</span>` : '';
+  const hiringPill = p.hiring ? `<span class="pc-tag hiring">Hiring now</span>` : '';
+
+  document.getElementById('d-pills').innerHTML = [ownershipPill, hiringPill, typePills, rcvsPill, ratingPill].filter(Boolean).join('');
+
+  const dist = getDist(p);
+  const distLine = dist ? `<div class="drawer-stat"><div class="drawer-stat-val">${dist.toFixed(1)} mi</div><div class="drawer-stat-label">from your location</div></div>` : '';
+
+  document.getElementById('d-stats').innerHTML = `
+    ${p.salary && p.salary !== '—' ? `<div class="drawer-stat"><div class="drawer-stat-val">${p.salary}</div><div class="drawer-stat-label">Salary range</div></div>` : ''}
+    ${p.teamSize && p.teamSize !== '—' ? `<div class="drawer-stat"><div class="drawer-stat-val">${p.teamSize}</div><div class="drawer-stat-label">Team size</div></div>` : ''}
+    ${p.schedule && p.schedule !== '—' ? `<div class="drawer-stat"><div class="drawer-stat-val">${p.schedule}</div><div class="drawer-stat-label">Schedule</div></div>` : ''}
+    ${distLine}
+    ${p.phone ? `<div class="drawer-stat"><div class="drawer-stat-val" style="font-size:13px;">${p.phone}</div><div class="drawer-stat-label">Phone</div></div>` : ''}
+    ${p.website ? `<div class="drawer-stat"><div class="drawer-stat-val" style="font-size:13px;"><a href="${p.website}" target="_blank" style="color:var(--mint)">Visit website ↗</a></div><div class="drawer-stat-label">Website</div></div>` : ''}
+  `;
+
+  document.getElementById('d-species').innerHTML = p.species.length
+    ? p.species.map(s => `<span class="species-pill">${s}</span>`).join('')
+    : '<span style="font-size:12px;color:var(--text-muted);">Not specified</span>';
+
+  // Hide reviews section initially — will populate from Google
+  const reviewsSection = document.getElementById('d-reviews-section');
+  if (reviewsSection) {
+    reviewsSection.style.display = 'none';
+    document.getElementById('d-reviews').innerHTML = '';
+  }
+
+  document.getElementById('d-interest-btn').onclick = () => openModal(p.name);
+
+  // Close advert overlay if open from previous practice
+  closeAdvertOverlay();
+
+  // Reset job listing + message panels
+  document.getElementById('d-job-listing').style.display = 'none';
+  closeMessagePanel();
+  document.getElementById('interest-panel').classList.remove('open');
+  document.getElementById('drawer').classList.add('open');
+  updateDrawerInterestState(p.id);
+  highlightCard(id);
+
+  // Check claimed account and load advert if hiring
+  checkPracticeClaimed(p.id);
+  if (p.hiring) loadPracticeAdvert(p.id, p.name, p.address);
+
+  // Fetch real Google rating and reviews
+  loadGoogleReviews(p);
+
+  setTimeout(() => {
+    map.invalidateSize();
+    map.setView([p.lat, p.lng], 15, { animate: true });
+    const marker = markers[p.id] || markers[String(p.id)];
+    if (marker) marker.openPopup();
+  }, 320);
+}
+
+async function checkPracticeClaimed(hospitalId) {
+  const msgBtn = document.getElementById('d-message-btn');
+  if (!msgBtn) return;
+  msgBtn.textContent = '💬 Send a message';
+  msgBtn.disabled = false;
+
+  const { data } = await sb.from('hospital_users')
+    .select('id')
+    .eq('hospital_id', hospitalId)
+    .limit(1);
+
+  drawerPracticeClaimed = !!(data && data.length > 0);
+
+  if (drawerPracticeClaimed) {
+    msgBtn.textContent = '💬 Send a message';
+    msgBtn.style.opacity = '1';
+  } else {
+    msgBtn.textContent = '💬 Send a message';
+    msgBtn.style.opacity = '0.7';
+  }
+}
+
+async function loadGoogleReviews(p) {
+  const reviewsSection = document.getElementById('d-reviews-section');
+  const reviewsEl = document.getElementById('d-reviews');
+  if (!reviewsSection || !reviewsEl) return;
+
+  // Show loading state
+  reviewsSection.style.display = 'block';
+  reviewsEl.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">Loading reviews…</div>';
+
+  try {
+    const res = await fetch('/api/google-places', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: p.name, address: p.address, postcode: p.postcode })
+    });
+
+    if (!res.ok) throw new Error('Failed to fetch');
+    const data = await res.json();
+
+    if (!data.found || !data.reviews?.length) {
+      reviewsSection.style.display = 'none';
+      return;
+    }
+
+    // Update rating in drawer pills if we got a fresher one
+    if (data.rating) {
+      const ratingPill = document.querySelector('#d-pills .pc-tag:last-child');
+      // Update the stat in drawer
+      const statsEl = document.getElementById('d-stats');
+      if (statsEl) {
+        // Add or update Google rating stat
+        const existing = document.getElementById('d-google-stat');
+        if (!existing && statsEl) {
+          const statDiv = document.createElement('div');
+          statDiv.id = 'd-google-stat';
+          statDiv.className = 'drawer-stat';
+          statDiv.innerHTML = `<div class="drawer-stat-val" style="color:#f4b942;">★ ${data.rating}</div><div class="drawer-stat-label">Google (${data.total?.toLocaleString()} reviews)</div>`;
+          statsEl.insertAdjacentElement('afterbegin', statDiv);
+        }
+      }
+    }
+
+    // Render reviews
+    const stars = n => '★'.repeat(n) + '☆'.repeat(5 - n);
+    reviewsEl.innerHTML = data.reviews.map(r => `
+      <div class="review-item" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--card-border);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          ${r.avatar ? `<img src="${r.avatar}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">` : ''}
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--cream);">${r.author}</div>
+            <div style="font-size:11px;color:#f4b942;">${stars(r.rating)} <span style="color:var(--text-muted);font-size:10px;">${r.time}</span></div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.55;">${r.text.length > 200 ? r.text.slice(0, 200) + '…' : r.text}</div>
+      </div>
+    `).join('');
+
+    reviewsSection.style.display = 'block';
+
+  } catch (err) {
+    reviewsSection.style.display = 'none';
+  }
+}
+
+let currentAdvertHtml = '';
+let currentAdvertPracticeName = '';
+let currentAdvertAddr = '';
+
+async function loadPracticeAdvert(hospitalId, name, address) {
+  // Always show the hiring card for hiring practices
+  const listing = document.getElementById('d-job-listing');
+  const roleTitle = document.getElementById('djl-role-title');
+  const roleMeta = document.getElementById('djl-role-meta');
+
+  // Default — show generic hiring card
+  if (listing) listing.style.display = 'block';
+  if (roleTitle) roleTitle.textContent = `Veterinary Surgeon — ${name}`;
+  if (roleMeta) roleMeta.textContent = 'This practice is hiring — express interest to find out more';
+  currentAdvertHtml = '';
+  currentAdvertPracticeName = name;
+  currentAdvertAddr = address;
+
+  // Try to load a published advert
+  const { data } = await sb.from('job_adverts')
+    .select('advert_html, role_type, experience_level')
+    .eq('hospital_id', hospitalId)
+    .eq('published', true)
+    .limit(1);
+
+  if (!data || data.length === 0) return; // Keep generic card
+
+  const advert = data[0];
+  currentAdvertHtml = advert.advert_html;
+
+  // Update card with advert details
+  if (roleTitle) roleTitle.textContent = `${advert.role_type || 'Veterinary Surgeon'} — ${name}`;
+  if (roleMeta) roleMeta.textContent = `${advert.experience_level || 'All levels considered'} · Tap to read full advert`;
+}
+
+function openAdvertOverlay() {
+  const overlay = document.getElementById('advert-overlay');
+  const body = document.getElementById('advert-overlay-body');
+  const nameEl = document.getElementById('advert-overlay-name');
+  const addrEl = document.getElementById('advert-overlay-addr');
+
+  if (nameEl) nameEl.textContent = currentAdvertPracticeName;
+  if (addrEl) addrEl.textContent = currentAdvertAddr;
+
+  // Render the advert — convert plain text to formatted HTML if needed
+  if (body) {
+    if (currentAdvertHtml && currentAdvertHtml.includes('<')) {
+      // Already HTML
+      body.innerHTML = currentAdvertHtml;
+    } else if (currentAdvertHtml) {
+      // Plain text — convert for display
+      body.innerHTML = currentAdvertHtml
+        .split('\n')
+        .map(line => {
+          line = line.trim();
+          if (!line) return '<br>';
+          if (line.startsWith('## ')) return `<h2>${line.slice(3)}</h2>`;
+          if (/^[A-Z][A-Z\s&/]+$/.test(line) && line.length > 2 && line.length < 60) return `<h3>${line}</h3>`;
+          if (line.startsWith('•')) return `<li>${line.slice(1).trim()}</li>`;
+          return `<p>${line}</p>`;
+        })
+        .join('')
+        .replace(/(<li>.*?<\/li>)+/gs, m => `<ul>${m}</ul>`);
+    } else {
+      body.innerHTML = `<div style="padding:32px;text-align:center;">
+        <div style="font-size:32px;margin-bottom:16px;">📋</div>
+        <div style="font-size:15px;font-weight:700;color:var(--cream);margin-bottom:8px;">This practice is hiring</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.65;">They haven't published a full job advert yet. Express interest and they'll be in touch with more details.</div>
+      </div>`;
+    }
+  }
+
+  // Position overlay to sit over the drawer (right side of screen)
+  const drawer = document.getElementById('drawer');
+  if (drawer) {
+    const rect = drawer.getBoundingClientRect();
+    overlay.style.right = '0';
+    overlay.style.left = rect.left + 'px';
+    overlay.style.top = rect.top + 'px';
+    overlay.style.bottom = (window.innerHeight - rect.bottom) + 'px';
+    overlay.style.width = rect.width + 'px';
+  }
+
+  overlay.classList.add('open');
+  overlay.scrollTop = 0;
+  document.getElementById('advert-overlay-backdrop').style.display = 'block';
+}
+
+function closeAdvertOverlay() {
+  document.getElementById('advert-overlay').classList.remove('open');
+  document.getElementById('advert-overlay-backdrop').style.display = 'none';
+}
+
+function updateDrawerInterestState(hospitalId) {
+  const interest = myInterests[hospitalId];
+  const btn = document.getElementById('d-interest-btn');
+  const panel = document.getElementById('interest-panel');
+  let timestamp = document.getElementById('interest-timestamp');
+  let upgradeBtn = document.getElementById('d-upgrade-btn');
+
+  if (!timestamp) {
+    timestamp = document.createElement('div');
+    timestamp.id = 'interest-timestamp';
+    timestamp.className = 'interest-timestamp';
+    btn.parentNode.insertBefore(timestamp, btn.nextSibling);
+  }
+
+  // Remove any existing upgrade button before re-rendering
+  if (upgradeBtn) upgradeBtn.remove();
+
+  if (interest) {
+    const modeLabel = { anon:'👻 Anonymous', semi:'🔓 Semi-visible', full:'✅ Full profile' }[interest.privacy_mode] || 'Interest';
+    const date = new Date(interest.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    btn.textContent = '✓ Interest expressed';
+    btn.className = 'interest-btn already-interested';
+    btn.onclick = null;
+    panel.classList.remove('open');
+    timestamp.textContent = `${modeLabel} · Sent ${date}`;
+    timestamp.style.display = 'block';
+
+    // Show upgrade button if not already full profile
+    if (interest.privacy_mode !== 'full') {
+      const newUpgradeBtn = document.createElement('button');
+      newUpgradeBtn.id = 'd-upgrade-btn';
+      newUpgradeBtn.className = 'message-btn';
+      newUpgradeBtn.style.marginTop = '8px';
+      newUpgradeBtn.textContent = '✅ Share my full profile with this practice';
+      newUpgradeBtn.onclick = () => confirmFullProfile(hospitalId, activeDrawerPractice?.name);
+      timestamp.parentNode.insertBefore(newUpgradeBtn, timestamp.nextSibling);
+    }
+  } else {
+    btn.textContent = 'Express Interest →';
+    btn.className = 'interest-btn';
+    btn.onclick = () => openModal(activeDrawerPractice?.name);
+    timestamp.style.display = 'none';
+  }
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  setTimeout(() => map.invalidateSize(), 320);
+}
+
+// ─────────────────────────────────────────
+//  MODAL
+// ─────────────────────────────────────────
+function openModal(practiceName) {
+  closeMessagePanel(); // close message panel if open — only one panel at a time
+  const name = activeDrawerPractice ? activeDrawerPractice.name : (practiceName || 'this practice');
+  document.getElementById('modal-practice-name').textContent = `How much of your profile would you like ${name} to see?`;
+  // Reset selection
+  document.querySelectorAll('.privacy-option').forEach(o => o.classList.remove('selected'));
+  document.querySelector('.privacy-option[data-priv="anon"]').classList.add('selected');
+  selectedPrivacy = 'anon';
+  const panel = document.getElementById('interest-panel');
+  panel.classList.add('open');
+  setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
+}
+
+function closeModal() {
+  document.getElementById('interest-panel').classList.remove('open');
+}
+
+// ─────────────────────────────────────────
+//  MESSAGE PANEL
+// ─────────────────────────────────────────
+function openMessagePanel() {
+  closeModal(); // close interest panel if open
+
+  if (!drawerPracticeClaimed) {
+    // Show "not on vetsi yet" panel
+    document.getElementById('not-on-vetsi-panel').classList.add('open');
+    document.getElementById('message-composer-panel').classList.remove('open');
+  } else {
+    // Show message composer
+    document.getElementById('message-composer-panel').classList.add('open');
+    document.getElementById('not-on-vetsi-panel').classList.remove('open');
+    setTimeout(() => {
+      document.getElementById('message-composer-panel').scrollIntoView({ behavior:'smooth', block:'nearest' });
+      document.getElementById('message-composer-input').focus();
+    }, 50);
+  }
+}
+
+function closeMessagePanel() {
+  document.getElementById('message-composer-panel')?.classList.remove('open');
+  document.getElementById('not-on-vetsi-panel')?.classList.remove('open');
+  const input = document.getElementById('message-composer-input');
+  if (input) input.value = '';
+}
+
+async function submitDirectMessage() {
+  if (!currentUser || !activeDrawerPractice) return;
+
+  const input = document.getElementById('message-composer-input');
+  const body = input?.value.trim();
+  if (!body) return;
+
+  const sendBtn = document.getElementById('message-composer-send');
+  sendBtn.disabled = true;
+  sendBtn.textContent = 'Sending…';
+
+  // Send the message — no interest row created, no profile shared
+  const { error } = await sb.from('messages').insert({
+    candidate_id: currentUser.id,
+    hospital_id: activeDrawerPractice.id,
+    sender_type: 'candidate',
+    body,
+  });
+
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'Send message';
+
+  if (error) {
+    showToast('⚠️ Could not send — please try again');
+    console.error(error.message);
+    return;
+  }
+
+  closeMessagePanel();
+  showToast('✅ Message sent to ' + activeDrawerPractice.name);
+}
+
+function selectPrivacy(el) {
+  document.querySelectorAll('.privacy-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPrivacy = el.dataset.priv;
+}
+
+async function submitInterest() {
+  if (!currentUser || !activeDrawerPractice) return;
+
+  const btn = document.getElementById('d-interest-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  const { error } = await sb.from('interests').upsert({
+    candidate_id: currentUser.id,
+    hospital_id: activeDrawerPractice.id,
+    privacy_mode: selectedPrivacy,
+  }, { onConflict: 'candidate_id,hospital_id' });
+
+  if (error) {
+    btn.disabled = false;
+    btn.textContent = 'Express Interest →';
+    showToast('⚠️ Something went wrong — please try again');
+    console.error(error.message);
+    return;
+  }
+
+  // Reload interests and refresh UI
+  await loadMyInterests();
+  closeModal();
+  updateDrawerInterestState(activeDrawerPractice.id);
+  renderPracticeList();
+
+  const label = {
+    anon: '👻 Anonymous interest sent!',
+    semi: '🔓 Semi-visible interest sent!',
+    full: '✅ Full profile sent!'
+  }[selectedPrivacy];
+  showToast(label);
+}
+
+function showToast(msg) {
+  const toast = document.createElement('div');
+  toast.style.cssText = `position:fixed;bottom:24px;right:24px;background:var(--mint);color:var(--forest);
+    padding:12px 20px;border-radius:10px;font-weight:700;font-size:14px;z-index:999;
+    box-shadow:0 4px 20px rgba(0,0,0,0.3);transition:opacity 0.4s;`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity='0'; setTimeout(() => toast.remove(), 400); }, 3000);
+}
+
+// ─────────────────────────────────────────
+//  SNAPSHOT
+// ─────────────────────────────────────────
+function copySnapshotLink() {
+  const slug = generateProfileSlug();
+  const link = 'https://vetsi.co.uk/vet/' + slug;
+  if (navigator.clipboard) navigator.clipboard.writeText(link);
+  const t = document.getElementById('snap-toast');
+  t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
+
+function generateProfileSlug() {
+  if (!profile.first && !profile.last) return currentUser?.id?.slice(0,8) || 'vet';
+  const first = (profile.first || '').toLowerCase().replace(/[^a-z]/g,'');
+  const last = (profile.last || '').toLowerCase().replace(/[^a-z]/g,'');
+  return (first + '-' + last).replace(/-+/g,'-').replace(/^-|-$/g,'') || 'vet';
+}
+
+// ─────────────────────────────────────────
+//  SALARY CALCULATOR
+// ─────────────────────────────────────────
+// ─────────────────────────────────────────
+//  SALARY CALCULATOR (candidate side)
+// ─────────────────────────────────────────
+
+// Reuse the same data tables as hospital side
+const V2_SALARY_DATA = {
+  small_animal: { new_grad:{avg:33000,low:28000,high:38000}, '1_2':{avg:40000,low:35000,high:46000}, '3_5':{avg:48000,low:42000,high:55000}, '5_10':{avg:58000,low:50000,high:67000}, '10_plus':{avg:68000,low:58000,high:82000} },
+  mixed:        { new_grad:{avg:35000,low:30000,high:40000}, '1_2':{avg:42000,low:36000,high:48000}, '3_5':{avg:50000,low:44000,high:57000}, '5_10':{avg:60000,low:52000,high:70000}, '10_plus':{avg:70000,low:60000,high:85000} },
+  equine:       { new_grad:{avg:34000,low:29000,high:39000}, '1_2':{avg:42000,low:36000,high:48000}, '3_5':{avg:52000,low:44000,high:60000}, '5_10':{avg:63000,low:54000,high:74000}, '10_plus':{avg:74000,low:62000,high:90000} },
+  farm:         { new_grad:{avg:34000,low:29000,high:40000}, '1_2':{avg:41000,low:35000,high:48000}, '3_5':{avg:50000,low:43000,high:58000}, '5_10':{avg:60000,low:51000,high:70000}, '10_plus':{avg:70000,low:59000,high:85000} },
+  emergency:    { new_grad:{avg:38000,low:33000,high:44000}, '1_2':{avg:46000,low:40000,high:53000}, '3_5':{avg:57000,low:50000,high:66000}, '5_10':{avg:68000,low:58000,high:80000}, '10_plus':{avg:80000,low:68000,high:96000} },
+  referral:     { new_grad:{avg:42000,low:36000,high:48000}, '1_2':{avg:52000,low:45000,high:60000}, '3_5':{avg:65000,low:56000,high:76000}, '5_10':{avg:80000,low:68000,high:95000}, '10_plus':{avg:95000,low:80000,high:120000} },
+  exotic:       { new_grad:{avg:34000,low:29000,high:39000}, '1_2':{avg:42000,low:36000,high:49000}, '3_5':{avg:52000,low:44000,high:61000}, '5_10':{avg:63000,low:53000,high:75000}, '10_plus':{avg:74000,low:62000,high:90000} },
+};
+const V2_REGION_MULT = { london:1.18, south_east:1.10, south_west:0.97, east_england:1.02, east_midlands:0.95, west_midlands:0.96, yorkshire:0.93, north_west:0.95, north_east:0.91, scotland:0.96, wales:0.91, northern_ireland:0.89 };
+const V2_TYPE_LABEL  = { small_animal:'Small Animal', mixed:'Mixed Practice', equine:'Equine', farm:'Farm / Large Animal', emergency:'Emergency & Critical Care', referral:'Referral / Specialist', exotic:'Exotics' };
+const V2_EXP_LABEL   = { new_grad:'New Graduate', '1_2':'1–2 years', '3_5':'3–5 years', '5_10':'5–10 years', '10_plus':'10+ years' };
+const V2_REG_LABEL   = { london:'London', south_east:'South East', south_west:'South West', east_england:'East of England', east_midlands:'East Midlands', west_midlands:'West Midlands', yorkshire:'Yorkshire', north_west:'North West', north_east:'North East', scotland:'Scotland', wales:'Wales', northern_ireland:'Northern Ireland' };
+const V2_SAL_CONTEXT = {
+  small_animal: 'Small animal GP roles are the most common in the UK. RCVS fees, VDS cover and a CPD budget are expected as standard — if your practice isn\'t covering these, that\'s worth raising.',
+  mixed:        'Mixed practice vets are increasingly scarce. Your OOH commitment is a significant factor in your market value — practices with dedicated OOH cover command higher salaries.',
+  equine:       'Equine salaries vary significantly by caseload and client base. Competition circuit work typically commands a premium.',
+  farm:         'Farm vets are in short supply nationally. Many practices now include a vehicle and accommodation allowance on top of base salary.',
+  emergency:    'Emergency vets earn a premium for unsociable hours. Mental health support and clear shift structures are increasingly part of the total package.',
+  referral:     'Specialist and referral roles can vary widely depending on certificate, caseload and seniority. Clinical autonomy and case mix often matter as much as headline salary.',
+  exotic:       'Exotic-specialist roles are niche but the candidate pool is also small. Certificate support and case variety are key to retention at this level.',
+};
+
+function v2FmtSal(n) { return '£' + (Math.round(n / 1000) * 1000).toLocaleString('en-GB'); }
+
+function v2LookupSalary() {
+  const type = document.getElementById('v2-sal-type').value;
+  const exp  = document.getElementById('v2-sal-exp').value;
+  const reg  = document.getElementById('v2-sal-region').value;
+  const base = V2_SALARY_DATA[type]?.[exp];
+  if (!base) return;
+  const m    = V2_REGION_MULT[reg] || 1;
+  const avg  = Math.round(base.avg  * m / 1000) * 1000;
+  const low  = Math.round(base.low  * m / 1000) * 1000;
+  const high = Math.round(base.high * m / 1000) * 1000;
+  document.getElementById('v2-sal-avg').textContent   = v2FmtSal(avg);
+  document.getElementById('v2-sal-range').textContent = v2FmtSal(low) + ' – ' + v2FmtSal(high);
+  document.getElementById('v2-sal-context').textContent =
+    V2_EXP_LABEL[exp] + ' ' + V2_TYPE_LABEL[type] + ' in ' + V2_REG_LABEL[reg] + '. ' + (V2_SAL_CONTEXT[type] || '');
+  const r = document.getElementById('v2-sal-result');
+  r.style.display = 'block';
+}
+
+// Keep old calcSalary stub to avoid any reference errors
+function calcSalary() { v2LookupSalary(); }
+
+// ─────────────────────────────────────────
+//  CANDIDATE SETTINGS
+// ─────────────────────────────────────────
+
+function loadCandSettings() {
+  // Populate email
+  if (currentUser) {
+    const emailEl = document.getElementById('s-email');
+    if (emailEl) emailEl.value = currentUser.email || '';
+  }
+  // Load notification prefs from localStorage
+  try {
+    const prefs = JSON.parse(localStorage.getItem('vetsi_cand_notif') || '{}');
+    if (prefs.view !== undefined) document.getElementById('s-notif-view').checked = prefs.view;
+    if (prefs.message !== undefined) document.getElementById('s-notif-message').checked = prefs.message;
+    if (prefs.nearby !== undefined) document.getElementById('s-notif-nearby').checked = prefs.nearby;
+  } catch(e) {}
+}
+
+function saveCandNotifSettings() {
+  const prefs = {
+    view:    document.getElementById('s-notif-view')?.checked,
+    message: document.getElementById('s-notif-message')?.checked,
+    nearby:  document.getElementById('s-notif-nearby')?.checked,
+  };
+  localStorage.setItem('vetsi_cand_notif', JSON.stringify(prefs));
+  showToast('✅ Notification preferences saved');
+}
+
+function saveCandPrivSettings() {
+  showToast('✅ Privacy settings saved');
+}
+
+async function candUpdateEmail() {
+  const newEmail = document.getElementById('s-email').value.trim();
+  if (!newEmail) { showToast('⚠️ Please enter a new email address'); return; }
+  const { error } = await sb.auth.updateUser({ email: newEmail });
+  if (error) showToast('⚠️ ' + error.message);
+  else showToast('✅ Confirmation sent to ' + newEmail + ' — check your inbox');
+}
+
+async function candUpdatePassword() {
+  const newPass = document.getElementById('s-password').value;
+  if (!newPass || newPass.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
+  const { error } = await sb.auth.updateUser({ password: newPass });
+  if (error) showToast('⚠️ ' + error.message);
+  else {
+    showToast('✅ Password updated successfully');
+    document.getElementById('s-password').value = '';
+  }
+}
+
+function candDeleteAccount() {
+  if (confirm('Are you sure you want to permanently delete your account? This cannot be undone.')) {
+    showToast('⚠️ To delete your account please email hello@vetsi.co.uk');
+  }
+}
+
+// ─────────────────────────────────────────
+//  VET SPACE — LIVE SUPABASE
+// ─────────────────────────────────────────
+const VS_COLOURS = [
+  '#0d9488','#e11d48','#7c3aed','#d97706','#0284c7',
+  '#16a34a','#db2777','#ea580c','#4f46e5','#65a30d',
+  '#0891b2','#9333ea'
+];
+const VS_CAT_LABELS = {
+  general:'🐾 General', case:'🩺 Case Discussion', salary:'💷 Salary & Pay',
+  cpd:'📚 CPD', culture:'🏥 Practice Culture', locum:'🔄 Locum Life',
+  wellbeing:'🧠 Wellbeing', career:'💼 Career Moves'
+};
+
+function vsColourFromId(id) {
+  const n = id.replace(/-/g,'').split('').reduce((a,c) => a + c.charCodeAt(0), 0);
+  return VS_COLOURS[n % VS_COLOURS.length];
+}
+function vsInitials(username) {
+  // Show the 4-digit number from VetsiVet1234 → "1234"
+  const match = (username||'').match(/\d+/);
+  return match ? match[0] : '??';
+}
+function escHtml(str) {
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function vsTimeAgo(dateStr) {
+  const diff = (Date.now() - new Date(dateStr)) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  if (diff < 604800) return Math.floor(diff/86400) + 'd ago';
+  return new Date(dateStr).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+}
+function vsTrendScore(post) {
+  const ageHours = (Date.now() - new Date(post.created_at)) / 3600000;
+  const recency = Math.max(0, 168 - ageHours) / 168;
+  return (post.likes||0) + (post._replies?.length||0) * 2 + recency * 10;
+}
+
+async function getOrCreateIdentity() {
+  if (vsMyIdentity) return vsMyIdentity;
+  const { data: existing } = await sb.from('vet_identities')
+    .select('username, colour').eq('user_id', currentUser.id).single();
+  if (existing) { vsMyIdentity = existing; return existing; }
+  const num = Math.floor(1000 + Math.random() * 9000);
+  const username = `VetsiVet${num}`;
+  const colour = vsColourFromId(currentUser.id);
+  await sb.from('vet_identities').insert({ user_id: currentUser.id, username, colour });
+  vsMyIdentity = { username, colour };
+  return vsMyIdentity;
+}
+
+let vsFiltersListenerAdded = false;
+
+async function initVetSpace() {
+  if (!vsFiltersListenerAdded) {
+    document.getElementById('vs-filters').addEventListener('click', e => {
+      const btn = e.target.closest('[data-cat]');
+      if (!btn) return;
+      vsFilter = btn.dataset.cat;
+      document.querySelectorAll('#vs-filters [data-cat]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderVsPosts();
+    });
+    vsFiltersListenerAdded = true;
+  }
+  const identity = await getOrCreateIdentity();
+  const avatarEl = document.getElementById('vs-my-avatar');
+  const usernameEl = document.getElementById('vs-my-username');
+  if (avatarEl) { avatarEl.style.background = identity.colour; avatarEl.textContent = vsInitials(identity.username); }
+  if (usernameEl) usernameEl.textContent = identity.username;
+  const { data: myLikes } = await sb.from('vet_likes')
+    .select('post_id').eq('user_id', currentUser.id).not('post_id','is',null);
+  vsMyLikes = new Set((myLikes||[]).map(l => l.post_id));
+  await loadVsPosts();
+}
+
+async function loadVsPosts() {
+  document.getElementById('vs-posts-list').innerHTML =
+    `<div style="text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px;"><div style="font-size:28px;margin-bottom:10px;">🐾</div>Loading…</div>`;
+
+  const { data: posts, error } = await sb.from('vet_posts')
+    .select('*')
+    .eq('removed', false)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('loadVsPosts error:', error.message);
+    document.getElementById('vs-posts-list').innerHTML =
+      `<div style="text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px;">Could not load posts — ${error.message}</div>`;
+    return;
+  }
+
+  if (!posts || posts.length === 0) {
+    vsPosts = [];
+    renderVsPosts();
+    return;
+  }
+
+  // Fetch identities separately for all unique author_ids
+  const authorIds = [...new Set(posts.map(p => p.author_id))];
+  const { data: identities } = await sb.from('vet_identities')
+    .select('user_id, username, colour')
+    .in('user_id', authorIds);
+  const identityMap = {};
+  (identities||[]).forEach(i => { identityMap[i.user_id] = i; });
+
+  // Fetch replies
+  const postIds = posts.map(p => p.id);
+  let repliesByPost = {};
+  if (postIds.length > 0) {
+    const { data: replies } = await sb.from('vet_replies')
+      .select('id, post_id, author_id, body, likes, removed, report_count, parent_reply_id, created_at')
+      .in('post_id', postIds)
+      .eq('removed', false)
+      .order('created_at', { ascending: true });
+
+    // Fetch reply author identities
+    const replyAuthorIds = [...new Set((replies||[]).map(r => r.author_id))];
+    let replyIdentityMap = {};
+    if (replyAuthorIds.length > 0) {
+      const { data: rIdents } = await sb.from('vet_identities')
+        .select('user_id, username, colour')
+        .in('user_id', replyAuthorIds);
+      (rIdents||[]).forEach(i => { replyIdentityMap[i.user_id] = i; });
+    }
+
+    (replies||[]).forEach(r => {
+      r._identity = replyIdentityMap[r.author_id] || { username:'VetsiVet????', colour:'#3ecf6e' };
+      if (!repliesByPost[r.post_id]) repliesByPost[r.post_id] = [];
+      repliesByPost[r.post_id].push(r);
+    });
+  }
+
+  vsPosts = posts.map(p => ({
+    ...p,
+    _identity: identityMap[p.author_id] || { username:'VetsiVet????', colour:'#3ecf6e' },
+    _replies: repliesByPost[p.id] || []
+  }));
+  renderVsPosts();
+}
+
+function renderVsPosts() {
+  const list = document.getElementById('vs-posts-list');
+  let filtered = vsFilter === 'all' ? [...vsPosts] : vsPosts.filter(p => p.category === vsFilter);
+  if (vsSort === 'trending') filtered.sort((a,b) => vsTrendScore(b) - vsTrendScore(a));
+  else if (vsSort === 'new') filtered.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  else if (vsSort === 'top') filtered.sort((a,b) => (b.likes||0) - (a.likes||0));
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px;">
+      <div style="font-size:28px;margin-bottom:10px;">🐾</div>
+      No posts yet${vsFilter!=='all'?' in this category':''}. Be the first to post!</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(post => {
+    const identity = post._identity || { username:'VetsiVet????', colour:'#3ecf6e' };
+    const isLiked = vsMyLikes.has(post.id);
+    const replyCount = post._replies?.length || 0;
+    const repliesOpen = vsOpenReplies.has(post.id);
+    const isMyPost = post.author_id === currentUser?.id;
+    const catLabel = VS_CAT_LABELS[post.category] || '🐾 General';
+    // Build threaded reply structure
+    // Top-level replies: parent_reply_id is null
+    // Nested replies: parent_reply_id = another reply's id
+    const topReplies = (post._replies||[]).filter(r => !r.parent_reply_id);
+    const nestedByParent = {};
+    (post._replies||[]).filter(r => r.parent_reply_id).forEach(r => {
+      if (!nestedByParent[r.parent_reply_id]) nestedByParent[r.parent_reply_id] = [];
+      nestedByParent[r.parent_reply_id].push(r);
+    });
+
+    function renderReply(r, isNested = false) {
+      const ri = r._identity || { username:'VetsiVet????', colour:'#3ecf6e' };
+      if (r.removed) return `<div class="vs-reply${isNested?' vs-reply-nested':''}"><div class="vs-removed-notice">This reply was removed by a moderator.</div></div>`;
+      const childReplies = nestedByParent[r.id] || [];
+      const replyFormOpen = vsOpenReplyReplies.has(r.id);
+
+      return `<div class="${isNested ? 'vs-reply-nested' : ''}">
+        <div class="vs-reply">
+          <div class="vs-avatar-sm" style="background:${ri.colour}">${vsInitials(ri.username)}</div>
+          <div class="vs-reply-body">
+            <div class="vs-reply-author">${ri.username}</div>
+            <div class="vs-reply-text">${escHtml(r.body)}</div>
+            <div class="vs-reply-time">
+              ${vsTimeAgo(r.created_at)}
+              <button class="vs-reply-to-btn" onclick="toggleReplyToReply('${r.id}')">↩ Reply</button>
+            </div>
+          </div>
+          <button class="vs-report-btn" onclick="reportContent(null,'${r.id}')" title="Report">⚑</button>
+        </div>
+        ${replyFormOpen ? `
+          <div style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 6px 38px;">
+            <div class="vs-avatar-sm" style="background:${vsMyIdentity?.colour||'#3ecf6e'}">${vsInitials(vsMyIdentity?.username||'VV')}</div>
+            <div style="flex:1;">
+              <textarea class="vs-reply-input" id="vs-rr-${r.id}" placeholder="Reply to ${ri.username}…" rows="2"></textarea>
+              <div style="display:flex;gap:6px;margin-top:6px;">
+                <button class="modal-btn" onclick="toggleReplyToReply('${r.id}')">Cancel</button>
+                <button class="ask-post-btn" style="flex:1;" onclick="submitReply('${post.id}','${r.id}')">Post reply</button>
+              </div>
+            </div>
+          </div>` : ''}
+        ${childReplies.map(cr => renderReply(cr, true)).join('')}
+      </div>`;
+    }
+
+    const repliesHtml = topReplies.map(r => renderReply(r, false)).join('');
+
+    return `<div class="vs-post" id="vs-post-${post.id}">
+      <div class="vs-post-header">
+        <div class="vs-avatar" style="background:${identity.colour}">${vsInitials(identity.username)}</div>
+        <div class="vs-post-meta">
+          <div class="vs-username">${identity.username}</div>
+          <div class="vs-post-time">${vsTimeAgo(post.created_at)}</div>
+        </div>
+        <span class="vs-cat-badge">${catLabel}</span>
+        ${!isMyPost?`<button class="vs-report-btn" onclick="reportContent('${post.id}',null)" title="Report">⚑</button>`:''}
+      </div>
+      <div class="vs-post-title">${escHtml(post.title)}</div>
+      ${post.body?`<div class="vs-post-body">${escHtml(post.body)}</div>`:''}
+      <div class="vs-post-actions">
+        <button class="vs-action-btn ${isLiked?'liked':''}" onclick="toggleVsLike('${post.id}')">❤️ ${post.likes||0}</button>
+        <span class="vs-action-btn" style="cursor:default;opacity:0.6;">💬 ${replyCount} ${replyCount===1?'reply':'replies'}</span>
+      </div>
+      ${replyCount>0?`<div class="vs-replies">${repliesHtml}</div>`:''}
+      <div class="vs-inline-reply">
+        <div class="vs-avatar-sm" style="background:${vsMyIdentity?.colour||'#3ecf6e'};flex-shrink:0;">${vsInitials(vsMyIdentity?.username||'VV')}</div>
+        <div style="flex:1;display:flex;gap:8px;align-items:flex-end;">
+          <textarea class="vs-reply-input vs-inline-input" id="vs-ri-${post.id}" placeholder="Reply as ${vsMyIdentity?.username||'you'}…" rows="1"
+            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitReply('${post.id}')}"></textarea>
+          <button class="vs-send-btn" onclick="submitReply('${post.id}')">↑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setVsSort(btn) {
+  document.querySelectorAll('.vs-sort-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  vsSort = btn.dataset.sort;
+  renderVsPosts();
+}
+function togglePostForm() {
+  document.getElementById('vs-post-form').classList.toggle('open');
+}
+async function submitPost() {
+  const title = document.getElementById('vs-post-title').value.trim();
+  const body = document.getElementById('vs-post-body').value.trim();
+  const category = document.getElementById('vs-cat-select').value;
+  if (!title) { showToast('⚠️ Please enter a title'); return; }
+  const btn = document.getElementById('vs-submit-btn');
+  btn.disabled = true; btn.textContent = 'Posting…';
+  const { error } = await sb.from('vet_posts').insert({
+    author_id: currentUser.id, category, title, body: body||null, likes: 0
+  });
+  btn.disabled = false; btn.textContent = 'Post anonymously';
+  if (error) { showToast('⚠️ Could not post — ' + error.message); return; }
+  document.getElementById('vs-post-title').value = '';
+  document.getElementById('vs-post-body').value = '';
+  document.getElementById('vs-post-form').classList.remove('open');
+  showToast('✅ Posted anonymously');
+  await loadVsPosts();
+}
+function toggleReplyToReply(replyId) {
+  if (vsOpenReplyReplies.has(replyId)) vsOpenReplyReplies.delete(replyId);
+  else { vsOpenReplyReplies.clear(); vsOpenReplyReplies.add(replyId); }
+  renderVsPosts();
+  setTimeout(() => { const ta = document.getElementById('vs-rr-'+replyId); if(ta) ta.focus(); }, 50);
+}
+
+function toggleVsReply(postId) {
+  if (vsOpenReplies.has(postId)) vsOpenReplies.delete(postId);
+  else vsOpenReplies.add(postId);
+  renderVsPosts();
+  setTimeout(() => { const ta = document.getElementById('vs-ri-'+postId); if(ta) ta.focus(); }, 50);
+}
+
+async function submitReply(postId, parentReplyId) {
+  const inputId = parentReplyId ? 'vs-rr-' + parentReplyId : 'vs-ri-' + postId;
+  const ta = document.getElementById(inputId);
+  const body = ta?.value.trim();
+  if (!body) return;
+  ta.disabled = true;
+
+  const payload = {
+    post_id: postId,
+    author_id: currentUser.id,
+    body,
+    likes: 0,
+  };
+  if (parentReplyId) payload.parent_reply_id = parentReplyId;
+
+  const { error } = await sb.from('vet_replies').insert(payload);
+  ta.disabled = false;
+
+  if (error) { showToast('⚠️ Could not reply — ' + error.message); return; }
+
+  if (parentReplyId) vsOpenReplyReplies.delete(parentReplyId);
+  else vsOpenReplies.delete(postId);
+
+  showToast('✅ Reply posted');
+  await loadVsPosts();
+}
+async function toggleVsLike(postId) {
+  const post = vsPosts.find(p => p.id === postId);
+  if (!post) return;
+
+  if (vsMyLikes.has(postId)) {
+    // Unlike — optimistic update
+    vsMyLikes.delete(postId);
+    post.likes = Math.max(0, (post.likes||0) - 1);
+    renderVsPosts();
+    // Delete like row
+    await sb.from('vet_likes').delete()
+      .eq('user_id', currentUser.id).eq('post_id', postId);
+    // Decrement count safely in DB
+    await sb.rpc('decrement_post_likes', { post_id: postId });
+  } else {
+    // Like — optimistic update
+    vsMyLikes.add(postId);
+    post.likes = (post.likes||0) + 1;
+    renderVsPosts();
+    // Insert like row (ignore duplicate error)
+    const { error } = await sb.from('vet_likes').insert(
+      { user_id: currentUser.id, post_id: postId }
+    );
+    if (error?.code === '23505') {
+      // Already liked — revert optimistic update
+      vsMyLikes.delete(postId);
+      post.likes = Math.max(0, (post.likes||0) - 1);
+      renderVsPosts();
+      return;
+    }
+    // Increment count safely in DB
+    await sb.rpc('increment_post_likes', { post_id: postId });
+  }
+}
+async function reportContent(postId, replyId) {
+  const reason = prompt('Why are you reporting this? (optional — press OK to submit)');
+  if (reason === null) return;
+  const payload = { reporter_id: currentUser.id, reason: reason||null };
+  if (postId) payload.post_id = postId;
+  if (replyId) payload.reply_id = replyId;
+  const { error } = await sb.from('vet_reports').insert(payload);
+  if (error?.code === '23505') { showToast('You\'ve already reported this'); return; }
+  if (error) { showToast('⚠️ Could not report'); return; }
+  showToast('✅ Reported — our team will review this');
+}
+
+// ─────────────────────────────────────────
+//  NEWS — LIVE RSS
+// ─────────────────────────────────────────
+async function loadNews() {
+  if (newsLoaded) { renderNews(); return; }
+
+  const grid = document.getElementById('news-grid');
+  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px;">
+    <div style="font-size:28px;margin-bottom:10px;">📰</div>Loading latest vet news…</div>`;
+
+  const results = await Promise.allSettled(
+    NEWS_SOURCES.map(async source => {
+      const res = await fetch(RSS2JSON + encodeURIComponent(source.url) + '&count=6');
+      const json = await res.json();
+      if (json.status !== 'ok' || !json.items) return [];
+      return json.items.map(item => {
+        // Try guid first (usually the direct permalink), fall back to link
+        const rawUrl = item.guid || item.link || '';
+        // Filter out homepage/category URLs — must contain a path segment after the domain
+        const url = rawUrl.match(/https?:\/\/[^/]+\/.+/) ? rawUrl : '';
+        return {
+          headline: item.title?.replace(/&amp;/g,'&').replace(/&#8217;/g,"'").replace(/&#8216;/g,"'").replace(/&nbsp;/g,' ').replace(/<[^>]+>/g,'').trim(),
+          source: source.name,
+          emoji: source.emoji,
+          cat: source.cat,
+          url,
+          date: item.pubDate ? new Date(item.pubDate).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '',
+        };
+      });
+    })
+  );
+
+  allNewsArticles = results
+    .filter(r => r.status === 'fulfilled')
+    .flatMap(r => r.value)
+    .filter(a => a.headline && a.headline.length > 10)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 40);
+
+  // If all feeds failed, show fallback
+  if (allNewsArticles.length === 0) {
+    allNewsArticles = [
+      { headline:'RCVS launches updated CPD framework for 2025 — what you need to know', source:'RCVS', emoji:'📋', cat:'industry', url:'https://www.rcvs.org.uk', date:'Apr 2025' },
+      { headline:'UK vet staffing shortage: BVA calls for urgent government intervention', source:'BVA', emoji:'🏛️', cat:'industry', url:'https://www.bva.co.uk', date:'Apr 2025' },
+      { headline:'Four-day week in veterinary practice: six months on, what do the numbers say?', source:'Vet Times', emoji:'📰', cat:'wellbeing', url:'https://www.vettimes.co.uk', date:'Mar 2025' },
+      { headline:'Corporate consolidation continues as IVC Evidensia acquires three more practices', source:'VetSurgeon', emoji:'🩺', cat:'industry', url:'https://vetsurgeon.org', date:'Mar 2025' },
+    ];
+  }
+
+  newsLoaded = true;
+  renderNews();
+}
+
+function renderNews() {
+  document.querySelectorAll('.pill[data-news]').forEach(p => {
+    p.classList.toggle('active', p.dataset.news === activeNewsFilter);
+  });
+
+  const filtered = activeNewsFilter === 'all'
+    ? allNewsArticles
+    : allNewsArticles.filter(a => a.cat === activeNewsFilter);
+
+  const grid = document.getElementById('news-grid');
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px;">No articles found in this category right now.</div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(a => {
+    const sourceHomepages = {
+      'Vet Times': 'https://www.vettimes.co.uk',
+      'VetSurgeon': 'https://vetsurgeon.org',
+      'BVA': 'https://www.bva.co.uk/news-and-blog',
+      'RCVS': 'https://www.rcvs.org.uk/news-and-views',
+      'Vet Report': 'https://vetreport.net',
+      'Vet Voices UK': 'https://vetvoices.co.uk',
+    };
+    const href = a.url || sourceHomepages[a.source] || '#';
+    const hasDirectLink = !!a.url;
+    return `
+    <a class="news-card" href="${href}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
+      <div class="news-thumb">${a.emoji}</div>
+      <div class="news-body">
+        <div class="news-cat">${a.source.toUpperCase()}</div>
+        <div class="news-headline">${a.headline}</div>
+        <div class="news-meta">${a.date}${!hasDirectLink ? ' · Visit site for full article' : ''}</div>
+      </div>
+    </a>`;
+  }).join('');
+}
+
+document.getElementById('news-filters').addEventListener('click', e => {
+  if (!e.target.dataset.news) return;
+  activeNewsFilter = e.target.dataset.news;
+  renderNews();
+});
+
+// ─────────────────────────────────────────
+//  MESSAGES — REAL SUPABASE
+// ─────────────────────────────────────────
+async function initMessages(background = false) {
+  if (!currentUser) return;
+
+  const list = document.getElementById('messages-list');
+  if (!background) {
+    list.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--text-muted);">Loading…</div>';
+  }
+
+  // Get all messages for this candidate
+  const { data, error } = await sb.from('messages')
+    .select('hospital_id, body, sender_type, read, created_at')
+    .eq('candidate_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('initMessages error:', error.message);
+    if (!background) list.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--text-muted);">Could not load messages.</div>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    if (!background) {
+      list.innerHTML = `
+        <div style="padding:24px 16px;text-align:center;color:var(--text-muted);">
+          <div style="font-size:28px;margin-bottom:8px;">💬</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;">No messages yet</div>
+          <div style="font-size:12px;line-height:1.5;">When a practice messages you through vetsi, it'll appear here.</div>
+        </div>`;
+      document.getElementById('chat-name').textContent = 'Messages';
+      document.getElementById('chat-messages').innerHTML = '';
+    }
+    updateMsgBadge(0);
+    return;
+  }
+
+  // Fetch hospital names
+  const uniqueHospitalIds = [...new Set(data.map(m => m.hospital_id))];
+  const { data: hospitals } = await sb.from('hospitals')
+    .select('id, name')
+    .in('id', uniqueHospitalIds);
+  const hospitalNames = {};
+  (hospitals || []).forEach(h => { hospitalNames[h.id] = h.name; });
+
+  // Group by hospital — track unread per hospital (any unread hospital message)
+  const hospitalMap = {};
+  data.forEach(m => {
+    const hid = m.hospital_id;
+    if (!hospitalMap[hid]) {
+      hospitalMap[hid] = {
+        hospitalId: hid,
+        hospitalName: hospitalNames[hid] || 'Practice',
+        lastMsg: m.body,
+        lastTime: m.created_at,
+        hasUnread: false,
+      };
+    }
+    // Any unread message from the hospital counts
+    if (!m.read && m.sender_type === 'hospital') {
+      hospitalMap[hid].hasUnread = true;
+    }
+  });
+
+  const threads = Object.values(hospitalMap);
+  MSG_THREADS = threads;
+
+  // Update badge — count hospitals with any unread message
+  const unreadCount = threads.filter(t => t.hasUnread).length;
+  updateMsgBadge(unreadCount);
+
+  // Always re-render the thread list
+  list.innerHTML = threads.map((t, i) => {
+    const time = new Date(t.lastTime).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+    return `
+      <div class="message-thread ${i===activeMsgThread?'active':''}" onclick="switchThread(${i})">
+        ${t.hasUnread ? '<div class="mt-unread"></div>' : ''}
+        <div class="mt-name">${t.hospitalName}</div>
+        <div class="mt-preview">${t.lastMsg.substring(0, 60)}${t.lastMsg.length > 60 ? '…' : ''}</div>
+        <div class="mt-time">${time}</div>
+      </div>`;
+  }).join('');
+
+  // Only auto-load the conversation if NOT a background refresh
+  if (!background && threads.length > 0) await renderChat(activeMsgThread);
+}
+
+function updateMsgBadge(count) {
+  const badge = document.getElementById('msg-nav-badge');
+  if (!badge) return;
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+  syncMobBadge();
+}
+
+async function switchThread(i) {
+  activeMsgThread = i;
+  await renderChat(i);
+  // Re-render list to update active state
+  const items = document.querySelectorAll('.message-thread');
+  items.forEach((el, idx) => el.classList.toggle('active', idx === i));
+}
+
+async function renderChat(i) {
+  if (!MSG_THREADS[i]) return;
+  const t = MSG_THREADS[i];
+  activeConversation = t;
+
+  document.getElementById('chat-name').textContent = t.hospitalName;
+  document.getElementById('chat-messages').innerHTML = '<div style="padding:12px;font-size:12px;color:var(--text-muted);">Loading…</div>';
+
+  const { data, error } = await sb.from('messages')
+    .select('*')
+    .eq('candidate_id', currentUser.id)
+    .eq('hospital_id', t.hospitalId)
+    .order('created_at', { ascending: true });
+
+  if (error || !data) {
+    document.getElementById('chat-messages').innerHTML = '<div style="padding:12px;font-size:12px;color:var(--text-muted);">Could not load conversation.</div>';
+    return;
+  }
+
+  // Mark hospital messages as read
+  const unreadIds = data.filter(m => !m.read && m.sender_type === 'hospital').map(m => m.id);
+  if (unreadIds.length > 0) {
+    await sb.from('messages').update({ read: true }).in('id', unreadIds);
+    // Update thread unread flag and badge
+    if (MSG_THREADS[i]) MSG_THREADS[i].hasUnread = false;
+    const unreadCount = MSG_THREADS.filter(t => t.hasUnread).length;
+    updateMsgBadge(unreadCount);
+    // Re-render thread list so the dot disappears from this thread
+    const list = document.getElementById('messages-list');
+    if (list && MSG_THREADS.length > 0) {
+      list.innerHTML = MSG_THREADS.map((t, idx) => {
+        const time = new Date(t.lastTime).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+        return `
+          <div class="message-thread ${idx===activeMsgThread?'active':''}" onclick="switchThread(${idx})">
+            ${t.hasUnread ? '<div class="mt-unread"></div>' : ''}
+            <div class="mt-name">${t.hospitalName}</div>
+            <div class="mt-preview">${t.lastMsg.substring(0, 60)}${t.lastMsg.length > 60 ? '…' : ''}</div>
+            <div class="mt-time">${time}</div>
+          </div>`;
+      }).join('');
+    }
+  }
+
+  // Check if candidate has expressed interest in this hospital
+  const hasInterest = !!myInterests[t.hospitalId];
+  const interest = myInterests[t.hospitalId];
+  const privacyLabel = interest ? { anon:'👻 Anonymous', semi:'🔓 Semi-visible', full:'✅ Full profile' }[interest.privacy_mode] : null;
+
+  // Render express interest banner
+  const bannerEl = document.getElementById('express-interest-banner');
+  if (bannerEl) {
+    if (hasInterest) {
+      const canUpgrade = interest.privacy_mode !== 'full';
+      bannerEl.innerHTML = `
+        <div class="express-interest-banner">
+          <div class="eib-text">You've expressed interest in <strong>${t.hospitalName}</strong> — sharing your profile as <strong>${privacyLabel}</strong>.</div>
+          ${canUpgrade
+            ? `<button class="eib-btn" onclick="confirmFullProfile('${t.hospitalId}', '${t.hospitalName}')">✅ Share full profile</button>`
+            : `<button class="eib-btn already">✓ Full profile shared</button>`
+          }
+        </div>`;
+    } else {
+      bannerEl.innerHTML = `
+        <div class="express-interest-banner">
+          <div class="eib-text">Right now, <strong>${t.hospitalName}</strong> can only see your specialty and years of experience. Your name and personal details are completely hidden. Hit Express Interest to share more of your profile when you're ready.</div>
+          <button class="eib-btn" onclick="expressInterestFromMessages('${t.hospitalId}', '${t.hospitalName}')">Express Interest →</button>
+        </div>`;
+    }
+  }
+
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML = data.map(m => {
+    const mine = m.sender_type === 'candidate';
+    const time = new Date(m.created_at).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) +
+      ' · ' + new Date(m.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+    return `
+      <div class="chat-bubble ${mine ? 'mine' : ''}">
+        <div class="bubble-text">${m.body}</div>
+        <div class="bubble-time">${time}</div>
+      </div>`;
+  }).join('');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function expressInterestFromMessages(hospitalId, hospitalName) {
+  // Find practice from PRACTICES array, or create a minimal stub
+  let practice = PRACTICES.find(p => String(p.id) === String(hospitalId));
+
+  if (!practice) {
+    // Not loaded in map yet — fetch minimal data from Supabase
+    const { data } = await sb.from('hospitals')
+      .select('id, name, address, postcode, lat, lng')
+      .eq('id', hospitalId)
+      .single();
+    if (data) {
+      practice = { id: data.id, name: data.name, address: data.address, postcode: data.postcode, lat: data.lat, lng: data.lng };
+    }
+  }
+
+  if (!practice) { showToast('⚠️ Could not find practice — try from the map'); return; }
+
+  activeDrawerPractice = practice;
+  const choice = await showPrivacyChoiceModal(hospitalName);
+  if (!choice) return;
+
+  selectedPrivacy = choice;
+  const { error } = await sb.from('interests').upsert({
+    candidate_id: currentUser.id,
+    hospital_id:  hospitalId,
+    privacy_mode: choice,
+  }, { onConflict: 'candidate_id,hospital_id' });
+
+  if (error) { showToast('⚠️ Something went wrong'); return; }
+
+  await loadMyInterests();
+  showToast('✅ Interest expressed — ' + hospitalName + ' can now see your profile');
+  await renderChat(activeMsgThread);
+}
+
+async function confirmFullProfile(hospitalId, hospitalName) {
+  // Show "are you sure" confirmation before upgrading to full profile
+  const confirmed = await new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;`;
+    overlay.innerHTML = `
+      <div style="background:#0d2b1f;border:1px solid rgba(62,207,110,0.3);border-radius:16px;padding:24px;width:360px;max-width:92vw;">
+        <div style="font-family:'Nunito',sans-serif;font-size:17px;font-weight:900;color:#f0ede6;margin-bottom:8px;">Share your full profile?</div>
+        <div style="font-size:13px;color:#7a9a88;margin-bottom:8px;line-height:1.6;">
+          You're about to share your <strong style="color:#f0ede6;">full profile</strong> with <strong style="color:#3ecf6e;">${hospitalName}</strong>, including:
+        </div>
+        <div style="background:rgba(62,207,110,0.08);border:1px solid rgba(62,207,110,0.2);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:#7a9a88;line-height:1.8;">
+          ✓ Your full name<br>
+          ✓ Your qualifications<br>
+          ✓ Your bio<br>
+          ✓ Your email address<br>
+          ✓ Your phone number
+        </div>
+        <div style="font-size:12px;color:#7a9a88;margin-bottom:18px;line-height:1.5;">This cannot be undone — once shared, the practice will have your contact details.</div>
+        <div style="display:flex;gap:10px;">
+          <button id="cfp-cancel" style="flex:1;padding:12px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#7a9a88;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;">Cancel</button>
+          <button id="cfp-confirm" style="flex:1;padding:12px;background:#3ecf6e;border:none;border-radius:8px;color:#0d2b1f;cursor:pointer;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;">Yes, share full profile</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#cfp-cancel').addEventListener('click', () => { document.body.removeChild(overlay); resolve(false); });
+    overlay.querySelector('#cfp-confirm').addEventListener('click', () => { document.body.removeChild(overlay); resolve(true); });
+  });
+
+  if (!confirmed) return;
+
+  const { error } = await sb.from('interests').upsert({
+    candidate_id: currentUser.id,
+    hospital_id: hospitalId,
+    privacy_mode: 'full',
+  }, { onConflict: 'candidate_id,hospital_id' });
+
+  if (error) { showToast('⚠️ Something went wrong — please try again'); return; }
+
+  await loadMyInterests();
+  showToast('✅ Full profile shared with ' + hospitalName);
+
+  // Refresh whichever view is currently showing
+  if (activeDrawerPractice?.id && String(activeDrawerPractice.id) === String(hospitalId)) {
+    updateDrawerInterestState(hospitalId);
+  }
+  await renderChat(activeMsgThread);
+}
+
+function showPrivacyChoiceModal(hospitalName) {
+  return new Promise(resolve => {
+    // Create a simple modal overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;`;
+    overlay.innerHTML = `
+      <div style="background:#0d2b1f;border:1px solid rgba(62,207,110,0.3);border-radius:16px;padding:24px;width:360px;max-width:92vw;">
+        <div style="font-family:'Nunito',sans-serif;font-size:17px;font-weight:900;color:#f0ede6;margin-bottom:4px;">Express Interest</div>
+        <div style="font-size:13px;color:#7a9a88;margin-bottom:18px;line-height:1.5;">How much of your profile would you like <strong style="color:#3ecf6e">${hospitalName}</strong> to see?</div>
+        <div id="pmc-options">
+          <div class="pmc-opt" data-v="anon" style="background:#163d2c;border:2px solid rgba(62,207,110,0.2);border-radius:10px;padding:13px;margin-bottom:10px;cursor:pointer;">
+            <div style="font-size:13px;font-weight:700;color:#f0ede6;margin-bottom:3px;">👻 Anonymous</div>
+            <div style="font-size:12px;color:#7a9a88;">Specialty and experience only. No name or contact info.</div>
+          </div>
+          <div class="pmc-opt" data-v="semi" style="background:#163d2c;border:2px solid rgba(62,207,110,0.2);border-radius:10px;padding:13px;margin-bottom:10px;cursor:pointer;">
+            <div style="font-size:13px;font-weight:700;color:#f0ede6;margin-bottom:3px;">🔓 Semi-visible</div>
+            <div style="font-size:12px;color:#7a9a88;">Your name, specialty, experience and bio. No contact details yet.</div>
+          </div>
+          <div class="pmc-opt" data-v="full" style="background:#163d2c;border:2px solid rgba(62,207,110,0.2);border-radius:10px;padding:13px;margin-bottom:10px;cursor:pointer;">
+            <div style="font-size:13px;font-weight:700;color:#f0ede6;margin-bottom:3px;">✅ Full profile</div>
+            <div style="font-size:12px;color:#7a9a88;">Full Career Snapshot including email and phone number.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button id="pmc-cancel" style="flex:1;padding:11px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#7a9a88;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;">Cancel</button>
+          <button id="pmc-confirm" style="flex:1;padding:11px;background:#3ecf6e;border:none;border-radius:8px;color:#0d2b1f;cursor:pointer;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;" disabled>Send interest</button>
+        </div>
+      </div>`;
+
+    let selected = null;
+    overlay.querySelectorAll('.pmc-opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        overlay.querySelectorAll('.pmc-opt').forEach(o => o.style.borderColor = 'rgba(62,207,110,0.2)');
+        opt.style.borderColor = '#3ecf6e';
+        selected = opt.dataset.v;
+        overlay.querySelector('#pmc-confirm').disabled = false;
+      });
+    });
+
+    overlay.querySelector('#pmc-cancel').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      resolve(null);
+    });
+
+    overlay.querySelector('#pmc-confirm').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      resolve(selected);
+    });
+
+    document.body.appendChild(overlay);
+  });
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input?.value.trim();
+  if (!text) return;
+
+  // If no active conversation, try to use the first thread
+  if (!activeConversation && MSG_THREADS.length > 0) {
+    await renderChat(0);
+  }
+
+  if (!activeConversation) {
+    showToast('⚠️ No conversation selected');
+    return;
+  }
+
+  input.value = '';
+  input.disabled = true;
+
+  const { error } = await sb.from('messages').insert({
+    candidate_id: currentUser.id,
+    hospital_id: activeConversation.hospitalId,
+    sender_type: 'candidate',
+    body: text,
+  });
+
+  input.disabled = false;
+
+  if (error) {
+    showToast('⚠️ Could not send — ' + error.message);
+    console.error('sendMessage error:', error.message);
+    input.value = text;
+    return;
+  }
+
+  await renderChat(activeMsgThread);
+}
+
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendMessage();
+});
+
+// ─────────────────────────────────────────
+//  SUPABASE SETUP
+// ─────────────────────────────────────────
+const SUPABASE_URL = 'https://lnruacfecwuvrlmyrwlr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxucnVhY2ZlY3d1dnJsbXlyd2xyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNDkyNzQsImV4cCI6MjA5MDkyNTI3NH0.CrkAKVr_dLTNUoyayclbOEFp6WGB0lxP8c0o0IiR5P8'; // ← paste your regenerated key here
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    storageKey: 'vetsi-candidate-session',
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  }
+});
+
+let currentUser = null;
+
+// ─────────────────────────────────────────
+//  AUTH UI
+// ─────────────────────────────────────────
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.auth-tab[onclick="switchAuthTab('${tab}')"]`).classList.add('active');
+  document.getElementById('signin-form').style.display = tab === 'signin' ? 'flex' : 'none';
+  document.getElementById('signup-form').style.display = tab === 'signup' ? 'flex' : 'none';
+}
+
+function setAuthLoading(form, loading) {
+  const btn = document.getElementById(form + '-btn');
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? '<span class="auth-loading"></span>Please wait…'
+    : (form === 'signin' ? 'Sign in' : 'Create free account');
+}
+
+function showAuthError(form, msg) {
+  const el = document.getElementById(form + '-error');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function clearAuthError(form) {
+  document.getElementById(form + '-error').classList.remove('show');
+}
+
+async function handleSignIn() {
+  clearAuthError('signin');
+  const email = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value;
+  if (!email || !password) { showAuthError('signin', 'Please enter your email and password.'); return; }
+  setAuthLoading('signin', true);
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  setAuthLoading('signin', false);
+  if (error) { showAuthError('signin', error.message); return; }
+  await onSignedIn(data.user);
+}
+
+async function handleSignUp() {
+  clearAuthError('signup');
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  if (!email || !password) { showAuthError('signup', 'Please fill in all fields.'); return; }
+  if (password.length < 8) { showAuthError('signup', 'Password must be at least 8 characters.'); return; }
+  setAuthLoading('signup', true);
+  const { data, error } = await sb.auth.signUp({ email, password });
+  setAuthLoading('signup', false);
+  if (error) { showAuthError('signup', error.message); return; }
+  // Trigger handles creating the candidates row automatically
+  await onSignedIn(data.user);
+}
+
+async function handleSignOut() {
+  await sb.auth.signOut();
+  currentUser = null;
+  // Reset all Vet Space state so next user gets a clean slate
+  vsMyIdentity = null;
+  vsPosts = [];
+  vsMyLikes = new Set();
+  vsOpenReplies = new Set();
+  vsOpenReplyReplies = new Set();
+  vsFilter = 'all';
+  vsSort = 'trending';
+  newsLoaded = false;
+  allNewsArticles = [];
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+let mapInitialised = false;
+let myInterests = {}; // keyed by hospital_id → { privacy_mode, created_at }
+
+async function onSignedIn(user) {
+  currentUser = user;
+
+  // Check if this is a hospital user — redirect them to the employer dashboard
+  const { data: hospLink } = await sb.from('hospital_users')
+    .select('hospital_id').eq('user_id', user.id).single();
+  if (hospLink) {
+    window.location.replace('vetsi-employer.html');
+    return;
+  }
+
+  // Reset all per-user state for clean slate on every login
+  vsMyIdentity = null;
+  vsPosts = [];
+  vsMyLikes = new Set();
+  vsOpenReplies = new Set();
+  vsOpenReplyReplies = new Set();
+  vsFilter = 'all';
+  vsSort = 'trending';
+  newsLoaded = false;
+  allNewsArticles = [];
+
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'flex';
+  await loadProfile();
+  await loadMyInterests();
+  if (!mapInitialised) {
+    mapInitialised = true;
+    await initMap();
+  }
+
+  // Real-time: listen for new messages to this candidate
+  // Remove any existing channels first to prevent duplicates on re-auth
+  await sb.removeAllChannels();
+
+  // Check for any existing unread messages on login — show badge immediately
+  const { data: unreadOnLoad } = await sb.from('messages')
+    .select('hospital_id')
+    .eq('candidate_id', user.id)
+    .eq('sender_type', 'hospital')
+    .eq('read', false);
+  if (unreadOnLoad && unreadOnLoad.length > 0) {
+    const uniqueHospitals = new Set(unreadOnLoad.map(m => m.hospital_id)).size;
+    updateMsgBadge(uniqueHospitals);
+  }
+
+  sb.channel('candidate-messages-' + user.id, {
+    config: { broadcast: { self: false } }
+  })
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `candidate_id=eq.${user.id}`
+    }, async (payload) => {
+      // Only process messages from hospitals
+      if (payload.new.sender_type !== 'hospital') return;
+
+      if (currentActiveView === 'messages' && activeConversation?.hospitalId === payload.new.hospital_id) {
+        // Already viewing this exact conversation — refresh silently
+        await renderChat(activeMsgThread);
+      } else {
+        // Not viewing — update badge and thread list in background
+        await initMessages(true);
+        showToast('💬 New message from a practice');
+      }
+    })
+    .subscribe(async (status) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn('Candidate realtime error — retrying in 3s');
+        setTimeout(() => sb.removeAllChannels(), 3000);
+      }
+    });
+}
+
+// ─────────────────────────────────────────
+//  LOAD PROFILE FROM SUPABASE
+// ─────────────────────────────────────────
+async function loadProfile() {
+  const { data, error } = await sb.from('candidates').select('*').eq('id', currentUser.id).single();
+  if (error || !data) return;
+
+  // Populate local profile object
+  profile.first = data.first_name || '';
+  profile.last = data.last_name || '';
+  profile.email = data.email || currentUser.email || '';
+  profile.phone = data.phone || '';
+  profile.location = data.location || '';
+  profile.exp = data.years_exp || '4–6 years';
+  profile.spec = data.specialty || '';
+  profile.schedule = data.schedule || '';
+  profile.salary = data.salary_target || '';
+  profile.commute = data.max_commute || '30';
+  profile.bio = data.bio || '';
+  profile.quals = data.qualifications || '';
+
+  // Update form fields
+  document.getElementById('p-first').value = profile.first;
+  document.getElementById('p-last').value = profile.last;
+  document.getElementById('p-email').value = profile.email;
+  document.getElementById('p-phone').value = profile.phone;
+  document.getElementById('p-location').value = profile.location;
+  document.getElementById('p-salary').value = profile.salary;
+  document.getElementById('p-commute').value = profile.commute;
+  document.getElementById('p-bio').value = profile.bio;
+  document.getElementById('p-quals').value = profile.quals;
+
+  // Set selects
+  setSelectValue('p-exp', profile.exp);
+  setSelectValue('p-spec', profile.spec);
+  setSelectValue('p-schedule', profile.schedule);
+
+  // Open to opportunities toggle
+  updateProfileUI();
+}
+
+// ─────────────────────────────────────────
+//  LOAD CANDIDATE'S OWN INTERESTS
+// ─────────────────────────────────────────
+async function loadMyInterests() {
+  const { data, error } = await sb.from('interests')
+    .select('hospital_id, privacy_mode, created_at')
+    .eq('candidate_id', currentUser.id);
+  if (error || !data) return;
+  myInterests = {};
+  data.forEach(row => {
+    myInterests[row.hospital_id] = {
+      privacy_mode: row.privacy_mode,
+      created_at: row.created_at
+    };
+  });
+}
+
+function setSelectValue(id, value) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  for (let opt of sel.options) {
+    if (opt.value === value || opt.text === value) { sel.value = opt.value; break; }
+  }
+}
+
+function updateProfileUI() {
+  const initials = ((profile.first||'')[0]||'?') + ((profile.last||'')[0]||'');
+  const fullName = [profile.first, profile.last].filter(Boolean).join(' ') || '—';
+
+  document.getElementById('profile-display-name').textContent = fullName;
+  document.getElementById('profile-avatar-big').textContent = initials.toUpperCase();
+  document.getElementById('sidebar-name').textContent = fullName;
+  document.getElementById('sidebar-avatar').textContent = initials.toUpperCase();
+  document.getElementById('sidebar-role').textContent =
+    profile.spec && profile.exp ? `${profile.spec} · ${profile.exp}` : 'Complete your profile';
+
+  // Update profile URL displays
+  const slug = generateProfileSlug();
+  const urlText = 'vetsi.co.uk/vet/' + slug;
+  const snapUrl = document.getElementById('snap-profile-url');
+  const profUrl = document.getElementById('profile-url-display');
+  if (snapUrl) snapUrl.textContent = urlText;
+  if (profUrl) profUrl.textContent = urlText;
+
+  // Snapshot
+  document.getElementById('snap-name').textContent = fullName;
+  document.getElementById('snap-avatar').textContent = initials.toUpperCase();
+  document.getElementById('snap-role').textContent = profile.spec ? `${profile.spec}${profile.exp ? ' · ' + profile.exp + ' experience' : ''}` : '';
+  document.getElementById('snap-location').textContent = profile.location ? '📍 ' + profile.location : '';
+  document.getElementById('snap-salary').textContent = profile.salary ? '£' + profile.salary + 'k' : '—';
+  document.getElementById('snap-exp').textContent = profile.exp || '—';
+  document.getElementById('snap-schedule').textContent = profile.schedule || '—';
+  if (profile.bio) document.getElementById('snap-looking').textContent = profile.bio.split('.')[0] + '.';
+  if (profile.quals) {
+    document.getElementById('snap-quals').innerHTML = profile.quals.split(',').map(q => `<span class="species-pill">${q.trim()}</span>`).join('');
+  }
+}
+
+// ─────────────────────────────────────────
+//  PROFILE SAVE (now writes to Supabase)
+// ─────────────────────────────────────────
+async function saveProfile() {
+  profile.first = document.getElementById('p-first').value;
+  profile.last = document.getElementById('p-last').value;
+  profile.email = document.getElementById('p-email').value;
+  profile.phone = document.getElementById('p-phone').value;
+  profile.location = document.getElementById('p-location').value;
+  profile.exp = document.getElementById('p-exp').value;
+  profile.spec = document.getElementById('p-spec').value;
+  profile.schedule = document.getElementById('p-schedule').value;
+  profile.salary = document.getElementById('p-salary').value;
+  profile.commute = document.getElementById('p-commute').value;
+  profile.bio = document.getElementById('p-bio').value;
+  profile.quals = document.getElementById('p-quals').value;
+
+  // Write to Supabase
+  const { error } = await sb.from('candidates').upsert({
+    id: currentUser.id,
+    first_name: profile.first,
+    last_name: profile.last,
+    email: profile.email,
+    phone: profile.phone,
+    location: profile.location,
+    years_exp: profile.exp,
+    specialty: profile.spec,
+    schedule: profile.schedule,
+    salary_target: profile.salary,
+    max_commute: profile.commute,
+    bio: profile.bio,
+    qualifications: profile.quals,
+  });
+
+  if (error) {
+    console.error('Save error:', error.message);
+    showToast('⚠️ Save failed — check console');
+    return;
+  }
+
+  updateProfileUI();
+  const toast = document.getElementById('save-toast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ─────────────────────────────────────────
+//  BOOT — check if already signed in
+// ─────────────────────────────────────────
+// Global Escape key — close any open drawer/modal
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('drawer')?.classList.contains('open')) { closeDrawer(); return; }
+  if (document.getElementById('interest-panel')?.classList.contains('open')) { closeModal(); return; }
+  if (document.getElementById('message-composer-panel')?.classList.contains('open')) { closeMessagePanel(); return; }
+  if (document.getElementById('mobile-more-sheet')?.style.display === 'block') { closeMobileMore(); return; }
+});
+
+window.addEventListener('load', async () => {
+  // Check for existing session
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    await onSignedIn(session.user);
+  } else {
+    // No session — send to index login page
+    window.location.replace('login.html');
+  }
+
+  // Listen for auth changes
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      await sb.removeAllChannels();
+      window.location.replace('login.html');
+    } else if (event === 'SIGNED_IN' && session && !currentUser) {
+      await onSignedIn(session.user);
+    } else if (event === 'TOKEN_REFRESHED' && session) {
+      currentUser = session.user;
+    }
+  });
+
+  // Allow Enter key on auth inputs
+  document.getElementById('signin-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleSignIn(); });
+  document.getElementById('signup-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleSignUp(); });
+
+  // Build mobile tab bar if on mobile
+  if (window.innerWidth <= 768) buildMobileTabBar();
+  window.addEventListener('resize', () => {
+    if (window.innerWidth <= 768) buildMobileTabBar();
+  });
+});
+
+// ─────────────────────────────────────────
+//  MOBILE TAB BAR
+// ─────────────────────────────────────────
+const MOB_PRIMARY = [
+  { view:'map',      label:'Map',      svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' },
+  { view:'messages', label:'Messages', svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>', badge:'msg-nav-badge' },
+  { view:'vetspace', label:'Community', svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
+  { view:'profile',  label:'Profile',  svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
+  { view:'more',     label:'More',     svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>' },
+];
+
+const MOB_MORE = [
+  { view:'snapshot', label:'Snapshot',  svg:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' },
+  { view:'salary',   label:'Salary',   svg:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>' },
+  { view:'news',     label:'News',     svg:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>' },
+];
+
+let mobTabsBuilt = false;
+
+function buildMobileTabBar() {
+  if (mobTabsBuilt) return;
+  mobTabsBuilt = true;
+
+  const nav = document.querySelector('.nav');
+  if (!nav) return;
+
+  // Build primary tabs
+  nav.innerHTML = MOB_PRIMARY.map(t => `
+    <button class="mob-tab ${currentActiveView === t.view || (t.view === 'map' && currentActiveView === 'map') ? 'active' : ''}"
+            data-mob-view="${t.view}" onclick="handleMobTab('${t.view}')">
+      ${t.svg}
+      <span class="mob-tab-label">${t.label}</span>
+      ${t.badge ? `<span class="mob-tab-dot" id="mob-dot-${t.view}"></span>` : ''}
+    </button>
+  `).join('');
+
+  // Sync message badge dot
+  syncMobBadge();
+
+  // Build more sheet items
+  const moreItems = document.getElementById('mobile-more-items');
+  if (moreItems) {
+    moreItems.innerHTML = MOB_MORE.map(t => `
+      <div class="more-item" onclick="handleMobTab('${t.view}');closeMobileMore();">
+        ${t.svg}
+        <span class="more-item-label">${t.label}</span>
+      </div>
+    `).join('');
+  }
+}
+
+function handleMobTab(view) {
+  if (view === 'more') {
+    openMobileMore();
+    return;
+  }
+  // Update active state on tabs
+  document.querySelectorAll('.mob-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mobView === view);
+  });
+  navigate(view);
+}
+
+function openMobileMore() {
+  document.getElementById('mobile-more-overlay').style.display = 'block';
+  document.getElementById('mobile-more-sheet').style.display = 'block';
+}
+
+function closeMobileMore() {
+  document.getElementById('mobile-more-overlay').style.display = 'none';
+  document.getElementById('mobile-more-sheet').style.display = 'none';
+}
+
+function syncMobBadge() {
+  const badge = document.getElementById('msg-nav-badge');
+  const dot = document.getElementById('mob-dot-messages');
+  if (!badge || !dot) return;
+  const visible = badge.style.display !== 'none' && badge.textContent !== '0' && badge.textContent !== '';
+  dot.classList.toggle('show', visible);
+}
+</script>
+</body>
+</html>
