@@ -4160,27 +4160,28 @@ document.addEventListener('keydown', e => {
 });
 
 window.addEventListener('load', async () => {
-  // Check for existing session
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    await onSignedIn(session.user);
-  } else {
-    // No session — send to login page
-    window.location.replace('login.html?role=vet');
-  }
-
-  // Listen for auth changes
+  // Listen for auth changes — fires immediately with INITIAL_SESSION if already logged in
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_OUT') {
       currentUser = null;
       await sb.removeAllChannels();
       window.location.replace('login.html?role=vet');
-    } else if (event === 'SIGNED_IN' && session && !currentUser) {
+    } else if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session && !currentUser) {
       await onSignedIn(session.user);
-    } else if (event === 'TOKEN_REFRESHED' && session) {
-      currentUser = session.user;
     }
   });
+
+  // Fallback — if onAuthStateChange doesn't fire within 2s, check manually
+  setTimeout(async () => {
+    if (!currentUser) {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        await onSignedIn(session.user);
+      } else {
+        window.location.replace('login.html?role=vet');
+      }
+    }
+  }, 2000);
 
   // Allow Enter key on auth inputs
   document.getElementById('signin-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleSignIn(); });
