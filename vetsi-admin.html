@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>vetsi admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --forest: #061510;
+    --forest-mid: #0d2b1f;
+    --forest-lit: #163d2c;
+    --mint: #3ecf6e;
+    --mint-dim: #2aad56;
+    --mint-pale: rgba(62,207,110,0.08);
+    --cream: #f0ede6;
+    --text: #e8e4dc;
+    --text-dim: rgba(240,237,230,0.55);
+    --border: rgba(62,207,110,0.15);
+    --card: rgba(13,43,31,0.6);
+    --input-bg: rgba(255,255,255,0.05);
+    --danger: #ef4444;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--forest);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(62,207,110,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 10% 80%, rgba(62,207,110,0.04) 0%, transparent 60%);
+  }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .login-card {
+    background: var(--forest-mid);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+  .login-logo {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 32px;
+    color: var(--cream);
+    margin-bottom: 4px;
+    display: block;
+  }
+  .login-logo span { color: var(--mint); }
+  .login-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+    margin-bottom: 36px;
+    display: block;
+  }
+  .login-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 15px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    margin-bottom: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .login-input:focus { border-color: var(--mint); }
+  .login-input::placeholder { color: var(--text-dim); }
+  .login-btn {
+    width: 100%;
+    background: var(--mint);
+    color: var(--forest);
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 4px;
+  }
+  .login-btn:hover { background: var(--mint-dim); }
+  .login-error {
+    font-size: 13px;
+    color: var(--danger);
+    margin-top: 10px;
+    display: none;
+  }
+
+  /* ── APP SHELL ── */
+  #app { display: none; }
+
+  .top-bar {
+    background: var(--forest-mid);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .top-bar-logo {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 20px;
+    color: var(--cream);
+  }
+  .top-bar-logo span { color: var(--mint); }
+  .top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .top-bar-tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--mint);
+    background: var(--mint-pale);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+  }
+  .signout-btn {
+    font-size: 13px;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+  }
+  .signout-btn:hover { color: var(--text); background: var(--input-bg); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 24px 32px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--forest-mid);
+  }
+  .tab {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dim);
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.2s;
+    border-radius: 8px 8px 0 0;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--mint);
+    border-bottom-color: var(--mint);
+    background: rgba(62,207,110,0.04);
+  }
+
+  /* ── CONTENT ── */
+  .content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 36px 32px;
+  }
+
+  .page-title {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 24px;
+    color: var(--cream);
+    margin-bottom: 4px;
+  }
+  .page-sub {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+
+  /* ── FORM CARD ── */
+  .form-card {
+    background: var(--forest-mid);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 32px;
+  }
+  .form-card-title {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 16px;
+    color: var(--cream);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .form-row.single { grid-template-columns: 1fr; }
+  .form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .form-input, .form-textarea, .form-select {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-size: 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus {
+    border-color: var(--mint);
+  }
+  .form-input::placeholder, .form-textarea::placeholder { color: var(--text-dim); }
+  .form-textarea { resize: vertical; min-height: 140px; line-height: 1.6; }
+  .form-select { cursor: pointer; }
+  .form-select option { background: var(--forest-mid); }
+
+  .form-hint {
+    font-size:11px;
+    color: var(--text-dim);
+    margin-top: 3px;
+    line-height: 1.5;
+  }
+
+  .btn-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .btn-primary {
+    background: var(--mint);
+    color: var(--forest);
+    border: none;
+    border-radius: 8px;
+    padding: 11px 24px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover { background: var(--mint-dim); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary {
+    background: var(--input-bg);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-secondary:hover { color: var(--text); border-color: rgba(62,207,110,0.3); }
+  .status-msg {
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    display: none;
+    font-weight: 500;
+  }
+  .status-msg.success { background: rgba(62,207,110,0.12); color: var(--mint); border: 1px solid rgba(62,207,110,0.3); }
+  .status-msg.error { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+  /* ── AI PREVIEW ── */
+  .ai-preview {
+    background: rgba(62,207,110,0.06);
+    border: 1px solid rgba(62,207,110,0.2);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-top: 16px;
+    display: none;
+  }
+  .ai-preview-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--mint);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .ai-preview-title {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    color: var(--cream);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .ai-preview-snippet {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.65;
+  }
+
+  /* ── ITEMS LIST ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .section-label {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 16px;
+    color: var(--cream);
+  }
+  .item-count {
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 10px;
+  }
+
+  .items-list { display: flex; flex-direction: column; gap: 10px; }
+  .item-row {
+    background: var(--forest-mid);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    transition: border-color 0.2s;
+  }
+  .item-row:hover { border-color: rgba(62,207,110,0.3); }
+  .item-info { flex: 1; min-width: 0; }
+  .item-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--cream);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .item-meta {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .item-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--mint);
+    background: var(--mint-pale);
+  }
+  .item-snippet {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.55;
+    margin-top: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .delete-btn {
+    background: none;
+    border: 1px solid rgba(239,68,68,0.3);
+    color: rgba(239,68,68,0.7);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .delete-btn:hover { background: rgba(239,68,68,0.1); color: #f87171; border-color: rgba(239,68,68,0.5); }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-dim);
+    font-size: 14px;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+  }
+  .empty-state-ico { font-size: 32px; margin-bottom: 12px; }
+
+  .tab-page { display: none; }
+  .tab-page.active { display: block; }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(6,21,16,0.3);
+    border-top-color: var(--forest);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 640px) {
+    .content { padding: 24px 16px; }
+    .tabs { padding: 20px 16px 0; }
+    .top-bar { padding: 0 16px; }
+    .form-row { grid-template-columns: 1fr; }
+    .form-row.triple { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <span class="login-logo">vet<span>si</span></span>
+    <span class="login-sub">Admin Dashboard</span>
+    <input class="login-input" type="password" id="pw-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')checkLogin()">
+    <button class="login-btn" onclick="checkLogin()">Sign in</button>
+    <div class="login-error" id="login-error">Incorrect password</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="top-bar">
+    <div class="top-bar-logo">vet<span>si</span></div>
+    <div class="top-bar-right">
+      <span class="top-bar-tag">Admin</span>
+      <button class="signout-btn" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('articles')">📰 Articles</button>
+    <button class="tab" onclick="switchTab('cpd')">📚 Upcoming CPD</button>
+  </div>
+
+  <!-- ARTICLES TAB -->
+  <div id="tab-articles" class="tab-page active">
+    <div class="content">
+      <div class="page-title">Articles</div>
+      <div class="page-sub">Paste an article link and its text content. Claude will generate a 2-3 sentence summary and add it to the Vet News feed.</div>
+
+      <div class="form-card">
+        <div class="form-card-title">✍️ Add new article</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Source / Publication</label>
+            <input class="form-input" id="art-source" placeholder="e.g. Vet Times, RCVS, BVA…">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="art-cat">
+              <option value="clinical">🩺 Clinical</option>
+              <option value="industry">🏥 Industry news</option>
+              <option value="policy">📋 Policy & regulation</option>
+              <option value="careers">💼 Careers</option>
+              <option value="wellbeing">🧠 Wellbeing</option>
+              <option value="research">🔬 Research</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row single">
+          <div class="form-group">
+            <label class="form-label">Article URL</label>
+            <input class="form-input" id="art-url" placeholder="https://…" type="url">
+          </div>
+        </div>
+
+        <div class="form-row single">
+          <div class="form-group">
+            <label class="form-label">Article text content</label>
+            <textarea class="form-textarea" id="art-body" placeholder="Paste the full article text here. Claude will summarise it into a 2-3 sentence snippet."></textarea>
+            <div class="form-hint">Paste as much or as little as you like. The more context, the better the summary.</div>
+          </div>
+        </div>
+
+        <div class="ai-preview" id="art-preview">
+          <span class="ai-preview-label">✨ AI-generated preview</span>
+          <span class="ai-preview-title" id="art-preview-title"></span>
+          <div class="ai-preview-snippet" id="art-preview-snippet"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="art-generate-btn" onclick="generateArticle()">
+            ✨ Generate snippet
+          </button>
+          <button class="btn-secondary" id="art-upload-btn" onclick="uploadArticle()" style="display:none;">
+            ↑ Publish to Vet News
+          </button>
+          <div class="status-msg" id="art-status"></div>
+        </div>
+      </div>
+
+      <!-- EXISTING ARTICLES -->
+      <div class="section-header">
+        <span class="section-label">Published articles</span>
+        <span class="item-count" id="art-count">0 articles</span>
+      </div>
+      <div class="items-list" id="art-list">
+        <div class="empty-state"><div class="empty-state-ico">📰</div>No articles yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CPD TAB -->
+  <div id="tab-cpd" class="tab-page">
+    <div class="content">
+      <div class="page-title">Upcoming CPD</div>
+      <div class="page-sub">Add upcoming CPD events and webinars. They'll appear in the Vet News CPD tab for all vets to browse.</div>
+
+      <div class="form-card">
+        <div class="form-card-title">📚 Add CPD event</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input class="form-input" id="cpd-title" placeholder="e.g. Small Animal Internal Medicine Update">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Provider</label>
+            <input class="form-input" id="cpd-provider" placeholder="e.g. BSAVA, Improve International…">
+          </div>
+        </div>
+
+        <div class="form-row triple">
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input class="form-input" id="cpd-date" type="date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cost</label>
+            <input class="form-input" id="cpd-cost" placeholder="e.g. £125, Free, From £50">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Format</label>
+            <select class="form-select" id="cpd-format">
+              <option value="online">Online / Webinar</option>
+              <option value="in-person">In person</option>
+              <option value="hybrid">Hybrid</option>
+              <option value="on-demand">On demand</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row single">
+          <div class="form-group">
+            <label class="form-label">Link to booking / info page</label>
+            <input class="form-input" id="cpd-url" placeholder="https://…" type="url">
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="cpd-upload-btn" onclick="uploadCPD()">
+            ↑ Add to CPD list
+          </button>
+          <div class="status-msg" id="cpd-status"></div>
+        </div>
+      </div>
+
+      <!-- EXISTING CPD -->
+      <div class="section-header">
+        <span class="section-label">Current CPD events</span>
+        <span class="item-count" id="cpd-count">0 events</span>
+      </div>
+      <div class="items-list" id="cpd-list">
+        <div class="empty-state"><div class="empty-state-ico">📚</div>No CPD events yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = 'vetsi-admin-2025';
+
+const SUPABASE_URL = 'https://lnruacfecwuvrlmyrwlr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxucnVhY2ZlY3d1dnJsbXlyd2xyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNDkyNzQsImV4cCI6MjA5MDkyNTI3NH0.CrkAKVr_dLTNUoyayclbOEFp6WGB0lxP8c0o0IiR5P8';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CAT_LABELS = {
+  clinical: '🩺 Clinical',
+  industry: '🏥 Industry news',
+  policy: '📋 Policy & regulation',
+  careers: '💼 Careers',
+  wellbeing: '🧠 Wellbeing',
+  research: '🔬 Research'
+};
+
+const FORMAT_LABELS = {
+  online: '💻 Online',
+  'in-person': '📍 In person',
+  hybrid: '🔄 Hybrid',
+  'on-demand': '⏱ On demand'
+};
+
+// Generated data held in memory until published
+let generatedTitle = null;
+let generatedSnippet = null;
+
+// ── AUTH ──
+function checkLogin() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === ADMIN_PASSWORD) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadArticles();
+    loadCPD();
+  } else {
+    const err = document.getElementById('login-error');
+    err.style.display = 'block';
+    setTimeout(() => err.style.display = 'none', 2500);
+  }
+}
+
+function signOut() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+}
+
+// ── TABS ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ── STATUS HELPERS ──
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+  el.style.display = 'inline-block';
+  if (type === 'success') setTimeout(() => el.style.display = 'none', 3500);
+}
+
+function setBtn(id, loading, text) {
+  const btn = document.getElementById(id);
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? `<span class="spinner"></span> ${text}`
+    : text;
+}
+
+// ── ARTICLES ──
+async function generateArticle() {
+  const source = document.getElementById('art-source').value.trim();
+  const url = document.getElementById('art-url').value.trim();
+  const body = document.getElementById('art-body').value.trim();
+  const category = document.getElementById('art-cat').value;
+
+  if (!body) { showStatus('art-status', 'Please paste the article text first', 'error'); return; }
+  if (!url) { showStatus('art-status', 'Please enter the article URL', 'error'); return; }
+
+  setBtn('art-generate-btn', true, 'Generating…');
+  document.getElementById('art-preview').style.display = 'none';
+  document.getElementById('art-upload-btn').style.display = 'none';
+  document.getElementById('art-status').style.display = 'none';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `You are a content editor for vetsi, a UK veterinary careers platform. Your job is to summarise news articles for busy UK vets in a clear, direct tone. No fluff, no hype, no em dashes.
+
+Respond ONLY with a JSON object in this exact format, no markdown, no preamble:
+{"title": "...", "snippet": "..."}
+
+Rules:
+- title: a clear, plain headline under 12 words
+- snippet: exactly 2-3 sentences summarising the key points a vet would care about
+- Write in third person, present or recent past tense
+- Sound like a journalist, not a marketer
+- Do not use em dashes or hyphens as dashes
+- Do not start with "This article..." or "The article..."`,
+        messages: [{
+          role: 'user',
+          content: `Source: ${source || 'Unknown'}\nCategory: ${category}\nURL: ${url}\n\nArticle text:\n${body.substring(0, 4000)}`
+        }]
+      })
+    });
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+
+    generatedTitle = parsed.title;
+    generatedSnippet = parsed.snippet;
+
+    document.getElementById('art-preview-title').textContent = parsed.title;
+    document.getElementById('art-preview-snippet').textContent = parsed.snippet;
+    document.getElementById('art-preview').style.display = 'block';
+    document.getElementById('art-upload-btn').style.display = 'inline-flex';
+    setBtn('art-generate-btn', false, '✨ Regenerate');
+
+  } catch (err) {
+    showStatus('art-status', 'Could not generate snippet — ' + err.message, 'error');
+    setBtn('art-generate-btn', false, '✨ Generate snippet');
+  }
+}
+
+async function uploadArticle() {
+  if (!generatedTitle || !generatedSnippet) return;
+
+  const source = document.getElementById('art-source').value.trim();
+  const url = document.getElementById('art-url').value.trim();
+  const category = document.getElementById('art-cat').value;
+
+  setBtn('art-upload-btn', true, 'Publishing…');
+
+  const { error } = await sb.from('vet_news').insert({
+    title: generatedTitle,
+    snippet: generatedSnippet,
+    source_name: source || 'Unknown',
+    source_url: url,
+    category,
+  });
+
+  if (error) {
+    showStatus('art-status', 'Error: ' + error.message, 'error');
+    setBtn('art-upload-btn', false, '↑ Publish to Vet News');
+    return;
+  }
+
+  showStatus('art-status', '✅ Published to Vet News', 'success');
+  setBtn('art-upload-btn', false, '↑ Publish to Vet News');
+
+  // Reset form
+  document.getElementById('art-source').value = '';
+  document.getElementById('art-url').value = '';
+  document.getElementById('art-body').value = '';
+  document.getElementById('art-preview').style.display = 'none';
+  document.getElementById('art-upload-btn').style.display = 'none';
+  setBtn('art-generate-btn', false, '✨ Generate snippet');
+  generatedTitle = null;
+  generatedSnippet = null;
+
+  await loadArticles();
+}
+
+async function loadArticles() {
+  const { data, error } = await sb.from('vet_news')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  const list = document.getElementById('art-list');
+  const count = document.getElementById('art-count');
+
+  if (error || !data || data.length === 0) {
+    count.textContent = '0 articles';
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-ico">📰</div>No articles yet — add your first one above.</div>`;
+    return;
+  }
+
+  count.textContent = data.length + ' article' + (data.length === 1 ? '' : 's');
+  list.innerHTML = data.map(a => `
+    <div class="item-row">
+      <div class="item-info">
+        <div class="item-title">${escHtml(a.title)}</div>
+        <div class="item-meta">
+          <span class="item-tag">${CAT_LABELS[a.category] || a.category}</span>
+          <span>${escHtml(a.source_name)}</span>
+          <span>${new Date(a.created_at).toLocaleDateString('en-GB')}</span>
+        </div>
+        <div class="item-snippet">${escHtml(a.snippet)}</div>
+      </div>
+      <button class="delete-btn" onclick="deleteArticle('${a.id}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function deleteArticle(id) {
+  if (!confirm('Delete this article?')) return;
+  const { error } = await sb.from('vet_news').delete().eq('id', id);
+  if (error) { alert('Error: ' + error.message); return; }
+  await loadArticles();
+}
+
+// ── CPD ──
+async function uploadCPD() {
+  const title = document.getElementById('cpd-title').value.trim();
+  const provider = document.getElementById('cpd-provider').value.trim();
+  const date = document.getElementById('cpd-date').value;
+  const cost = document.getElementById('cpd-cost').value.trim();
+  const format = document.getElementById('cpd-format').value;
+  const url = document.getElementById('cpd-url').value.trim();
+
+  if (!title) { showStatus('cpd-status', 'Please enter a title', 'error'); return; }
+  if (!provider) { showStatus('cpd-status', 'Please enter a provider', 'error'); return; }
+  if (!url) { showStatus('cpd-status', 'Please enter a URL', 'error'); return; }
+
+  setBtn('cpd-upload-btn', true, 'Adding…');
+
+  const { error } = await sb.from('vet_cpd').insert({
+    title, provider, event_date: date || null, cost: cost || null, format, url
+  });
+
+  if (error) {
+    showStatus('cpd-status', 'Error: ' + error.message, 'error');
+    setBtn('cpd-upload-btn', false, '↑ Add to CPD list');
+    return;
+  }
+
+  showStatus('cpd-status', '✅ Added to CPD list', 'success');
+  setBtn('cpd-upload-btn', false, '↑ Add to CPD list');
+
+  document.getElementById('cpd-title').value = '';
+  document.getElementById('cpd-provider').value = '';
+  document.getElementById('cpd-date').value = '';
+  document.getElementById('cpd-cost').value = '';
+  document.getElementById('cpd-url').value = '';
+
+  await loadCPD();
+}
+
+async function loadCPD() {
+  const { data, error } = await sb.from('vet_cpd')
+    .select('*')
+    .order('event_date', { ascending: true, nullsFirst: false });
+
+  const list = document.getElementById('cpd-list');
+  const count = document.getElementById('cpd-count');
+
+  if (error || !data || data.length === 0) {
+    count.textContent = '0 events';
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-ico">📚</div>No CPD events yet — add your first one above.</div>`;
+    return;
+  }
+
+  count.textContent = data.length + ' event' + (data.length === 1 ? '' : 's');
+  list.innerHTML = data.map(c => `
+    <div class="item-row">
+      <div class="item-info">
+        <div class="item-title">${escHtml(c.title)}</div>
+        <div class="item-meta">
+          <span class="item-tag">${FORMAT_LABELS[c.format] || c.format}</span>
+          <span>${escHtml(c.provider)}</span>
+          ${c.event_date ? `<span>${new Date(c.event_date).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'})}</span>` : ''}
+          ${c.cost ? `<span style="color:var(--mint);font-weight:600;">${escHtml(c.cost)}</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;align-items:center;">
+        <a href="${escHtml(c.url)}" target="_blank" style="font-size:12px;color:var(--mint);text-decoration:none;font-weight:600;padding:5px 10px;border:1px solid var(--border);border-radius:6px;">View ↗</a>
+        <button class="delete-btn" onclick="deleteCPD('${c.id}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function deleteCPD(id) {
+  if (!confirm('Delete this CPD event?')) return;
+  const { error } = await sb.from('vet_cpd').delete().eq('id', id);
+  if (error) { alert('Error: ' + error.message); return; }
+  await loadCPD();
+}
+
+function escHtml(str) {
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
