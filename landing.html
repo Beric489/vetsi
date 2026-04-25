@@ -1,0 +1,1907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>vetsi — Find your place in vet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,700&family=Nunito:wght@700;800;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --forest:    #061510;
+  --forest-mid:#0d2b1f;
+  --forest-lit:#163d2c;
+  --mint:      #3ecf6e;
+  --mint-dim:  #2aad56;
+  --mint-pale: rgba(62,207,110,0.08);
+  --cream:     #f0ede6;
+  --cream-dim: rgba(240,237,230,0.55);
+  --muted:     rgba(240,237,230,0.35);
+  --border:    rgba(62,207,110,0.15);
+  --red:       #ef4444;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior:smooth; }
+
+body {
+  background:var(--forest);
+  color:var(--cream);
+  font-family:'DM Sans', sans-serif;
+  font-weight:400;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ─── TYPOGRAPHY ─────────────────── */
+.display {
+  font-family:'Fraunces', serif;
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:-0.03em;
+}
+.display-italic {
+  font-family:'Fraunces', serif;
+  font-style:italic;
+  font-weight:700;
+}
+
+/* ─── NAV ────────────────────────── */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  padding:0 48px;
+  height:64px;
+  display:flex; align-items:center; justify-content:space-between;
+  background:rgba(6,21,16,0.8);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(62,207,110,0.08);
+  transition:background 0.3s;
+}
+.nav-logo {
+  font-family:'Nunito', sans-serif;
+  font-weight:900; font-size:26px;
+  color:var(--cream); letter-spacing:-0.5px;
+}
+.nav-logo span { color:var(--mint); }
+.nav-links {
+  display:flex; align-items:center; gap:32px; list-style:none;
+}
+.nav-links a {
+  font-size:14px; color:var(--cream-dim); text-decoration:none;
+  transition:color 0.15s; letter-spacing:0.2px;
+}
+.nav-links a:hover { color:var(--cream); }
+.nav-cta {
+  display:flex; align-items:center; gap:12px;
+}
+.btn-ghost {
+  font-size:14px; color:var(--cream-dim); text-decoration:none;
+  padding:8px 18px; border:1px solid var(--border); border-radius:8px;
+  transition:all 0.15s; font-weight:500;
+}
+.btn-ghost:hover { color:var(--mint); border-color:var(--mint); }
+.btn-primary {
+  font-size:14px; color:var(--forest-mid); background:var(--mint);
+  text-decoration:none; padding:9px 20px; border-radius:8px;
+  font-weight:600; transition:all 0.15s; border:none; cursor:pointer;
+}
+.btn-primary:hover { background:var(--mint-dim); }
+
+/* ─── HERO ───────────────────────── */
+.hero {
+  min-height:100vh;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center;
+  padding:100px 24px 80px;
+  position:relative; overflow:hidden;
+}
+
+.hero-bg {
+  position:absolute; inset:0; z-index:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(62,207,110,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 80% 60%, rgba(62,207,110,0.05) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 20% 80%, rgba(13,43,31,0.8) 0%, transparent 60%);
+}
+
+/* animated grid */
+.hero-grid {
+  position:absolute; inset:0; z-index:0; opacity:0.06;
+  background-image:
+    linear-gradient(var(--mint) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mint) 1px, transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 80%);
+}
+
+.hero-badge {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(62,207,110,0.1); border:1px solid rgba(62,207,110,0.25);
+  border-radius:100px; padding:6px 16px;
+  font-size:12px; font-weight:600; color:var(--mint);
+  letter-spacing:0.5px; text-transform:uppercase;
+  margin-bottom:32px; position:relative; z-index:1;
+  animation:fadeUp 0.8s ease both;
+}
+.badge-dot {
+  width:6px; height:6px; border-radius:50%; background:var(--mint);
+  animation:pulse 2s ease infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.4; transform:scale(0.7); }
+}
+
+.hero h1 {
+  font-size:clamp(52px, 8vw, 96px);
+  max-width:900px; margin:0 auto 24px;
+  position:relative; z-index:1;
+  animation:fadeUp 0.8s 0.1s ease both;
+}
+.hero h1 .accent { color:var(--mint); }
+.hero h1 .italic { font-style:italic; font-weight:700; }
+
+.hero-sub {
+  font-size:clamp(16px, 2vw, 20px);
+  color:var(--cream-dim); max-width:540px; margin:0 auto 48px;
+  line-height:1.65; position:relative; z-index:1;
+  animation:fadeUp 0.8s 0.2s ease both;
+}
+
+.hero-actions {
+  display:flex; gap:14px; align-items:center; justify-content:center;
+  flex-wrap:wrap; position:relative; z-index:1;
+  animation:fadeUp 0.8s 0.3s ease both;
+}
+.btn-hero {
+  font-family:'DM Sans', sans-serif;
+  font-size:16px; font-weight:600; color:var(--forest-mid);
+  background:var(--mint); border:none; border-radius:10px;
+  padding:15px 32px; cursor:pointer; text-decoration:none;
+  transition:all 0.2s; letter-spacing:0.2px;
+  box-shadow:0 0 40px rgba(62,207,110,0.3);
+}
+.btn-hero:hover { background:var(--mint-dim); box-shadow:0 0 60px rgba(62,207,110,0.4); transform:translateY(-1px); }
+.btn-hero-ghost {
+  font-family:'DM Sans', sans-serif;
+  font-size:16px; font-weight:500; color:var(--cream-dim);
+  background:transparent; border:1px solid var(--border);
+  border-radius:10px; padding:14px 28px; cursor:pointer; text-decoration:none;
+  transition:all 0.2s;
+}
+.btn-hero-ghost:hover { color:var(--cream); border-color:rgba(62,207,110,0.4); }
+
+/* hero stat strip */
+.hero-stats {
+  position:relative; z-index:1;
+  animation:fadeUp 0.8s 0.4s ease both;
+}
+.hero-stat-val {
+  font-family:'Fraunces', serif; font-size:38px; font-weight:900;
+  color:var(--cream); letter-spacing:-1px; line-height:1;
+}
+.hero-stat-val span { color:var(--mint); }
+.hero-stat-label {
+  font-size:13px; color:var(--muted); margin-top:4px; letter-spacing:0.3px;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(24px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ─── SECTION BASE ────────────────── */
+section { padding:96px 24px; }
+.container { max-width:1120px; margin:0 auto; }
+.section-label {
+  font-size:11px; font-weight:600; text-transform:uppercase;
+  letter-spacing:2px; color:var(--mint); margin-bottom:16px;
+}
+.section-headline {
+  font-size:clamp(36px, 5vw, 56px); max-width:640px;
+  line-height:1.1; margin-bottom:20px;
+  margin-left:auto; margin-right:auto;
+}
+.section-sub {
+  font-size:17px; color:var(--cream-dim); line-height:1.7;
+  max-width:560px; margin-bottom:56px;
+}
+
+/* ─── PROBLEM SECTION ─────────────── */
+.problem-section {
+  background:var(--forest-mid);
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+.problem-grid {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;
+  margin-top:56px;
+}
+.problem-card {
+  border-radius:16px; padding:32px 28px;
+  display:flex; flex-direction:column;
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--border);
+  transition:border-color 0.2s;
+}
+.problem-card:hover { border-color:rgba(62,207,110,0.3); }
+.problem-icon { font-size:26px; margin-bottom:14px; }
+.problem-title {
+  font-family:'Fraunces', serif; font-size:19px; font-weight:700;
+  margin-bottom:10px; line-height:1.25; color:var(--cream);
+}
+.problem-desc {
+  font-size:13.5px; line-height:1.7; flex:1; margin-bottom:22px;
+  color:var(--cream-dim);
+}
+.problem-cost {
+  font-family:'Fraunces', serif; font-size:40px; font-weight:900;
+  letter-spacing:-1px; line-height:1; color:var(--mint);
+}
+.problem-cost-label { font-size:12px; margin-top:4px; color:var(--muted); }
+
+/* ─── HOW IT WORKS ────────────────── */
+.how-tabs {
+  display:flex; gap:4px; margin-bottom:56px;
+  background:var(--forest-mid); border-radius:10px; padding:4px;
+  width:fit-content; border:1px solid var(--border);
+}
+.how-tab {
+  padding:10px 24px; border-radius:7px; border:none;
+  font-family:'DM Sans', sans-serif; font-size:14px; font-weight:600;
+  cursor:pointer; transition:all 0.2s;
+  color:var(--muted); background:transparent;
+}
+.how-tab.active {
+  background:var(--mint); color:var(--forest-mid);
+}
+
+.how-panel { display:none; }
+.how-panel.active { display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; }
+
+.steps-list { display:flex; flex-direction:column; gap:0; }
+.step-item {
+  display:flex; gap:20px; padding:24px 0;
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+.step-item:last-child { border-bottom:none; }
+.step-num {
+  width:36px; height:36px; border-radius:50%; flex-shrink:0;
+  background:var(--forest-lit); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Fraunces', serif; font-weight:900; font-size:14px; color:var(--mint);
+  margin-top:2px;
+}
+.step-text-title {
+  font-size:15px; font-weight:600; color:var(--cream); margin-bottom:5px;
+}
+.step-text-desc { font-size:13px; color:var(--cream-dim); line-height:1.65; }
+
+/* ─── SCREEN MOCKUPS ─────────────── */
+.mockup-wrap {
+  position:relative;
+}
+.screen-device {
+  background:var(--forest-lit);
+  border:1px solid rgba(62,207,110,0.2);
+  border-radius:16px; overflow:hidden;
+  box-shadow:
+    0 0 0 1px rgba(62,207,110,0.05),
+    0 32px 80px rgba(0,0,0,0.5),
+    0 0 80px rgba(62,207,110,0.06);
+}
+.screen-bar {
+  height:36px; background:var(--forest-mid);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; padding:0 14px; gap:6px;
+}
+.screen-dot {
+  width:10px; height:10px; border-radius:50%;
+}
+
+/* ─── CANDIDATE SCREEN MOCKUP ─────── */
+.mock-candidate {
+  padding:0;
+}
+.mock-map-area {
+  height:200px;
+  background:linear-gradient(135deg, #0a2018 0%, #0d2b1f 50%, #0f3324 100%);
+  position:relative; overflow:hidden;
+}
+.mock-map-grid {
+  position:absolute; inset:0; opacity:0.15;
+  background-image:linear-gradient(var(--mint) 1px, transparent 1px),
+                   linear-gradient(90deg, var(--mint) 1px, transparent 1px);
+  background-size:28px 28px;
+}
+.mock-pin {
+  position:absolute; font-size:16px;
+}
+.mock-pin:nth-child(1) { top:30%; left:40%; }
+.mock-pin:nth-child(2) { top:55%; left:60%; }
+.mock-pin:nth-child(3) { top:20%; left:70%; }
+.mock-pin:nth-child(4) { top:65%; left:30%; }
+.mock-pin.active { font-size:22px; filter:drop-shadow(0 0 8px rgba(62,207,110,0.8)); }
+.mock-filters {
+  padding:10px 12px; display:flex; gap:6px; flex-wrap:wrap;
+  border-bottom:1px solid var(--border);
+}
+.mock-pill {
+  padding:4px 10px; border-radius:100px; font-size:10px; font-weight:600;
+  background:var(--forest-lit); border:1px solid var(--border); color:var(--cream-dim);
+}
+.mock-pill.on { background:var(--mint); color:var(--forest-mid); border-color:var(--mint); }
+.mock-practice-list { padding:8px 12px; }
+.mock-practice {
+  display:flex; align-items:center; gap:10px; padding:8px;
+  background:var(--forest-lit); border-radius:8px; margin-bottom:6px;
+  border:1px solid var(--border);
+}
+.mock-practice-dot {
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+}
+.mock-practice-name { font-size:11px; font-weight:600; color:var(--cream); flex:1; }
+.mock-practice-dist { font-size:10px; color:var(--muted); }
+.mock-practice-badge {
+  font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px;
+  background:rgba(62,207,110,0.15); color:var(--mint);
+}
+
+/* ─── HOSPITAL SCREEN MOCKUP ──────── */
+.mock-hosp { }
+.mock-kpis {
+  display:grid; grid-template-columns:1fr 1fr 1fr;
+  gap:8px; padding:12px;
+}
+.mock-kpi {
+  background:var(--forest-lit); border:1px solid var(--border);
+  border-radius:8px; padding:10px; text-align:center;
+}
+.mock-kpi-val {
+  font-family:'Fraunces', serif; font-size:22px; font-weight:900;
+  color:var(--mint); line-height:1;
+}
+.mock-kpi-label { font-size:9px; color:var(--muted); margin-top:3px; }
+.mock-pipeline {
+  padding:8px 12px;
+}
+.mock-pipe-tabs {
+  display:flex; gap:4px; margin-bottom:8px;
+}
+.mock-pipe-tab {
+  padding:4px 8px; border-radius:5px; font-size:9px; font-weight:600;
+  background:var(--forest-lit); border:1px solid var(--border); color:var(--muted);
+}
+.mock-pipe-tab.on { background:var(--mint); color:var(--forest-mid); border-color:var(--mint); }
+.mock-cand {
+  display:flex; align-items:center; gap:8px; padding:8px;
+  background:var(--forest-lit); border-radius:8px; margin-bottom:5px;
+  border:1px solid var(--border);
+}
+.mock-cand-av {
+  width:28px; height:28px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:9px; font-weight:800; color:#fff; flex-shrink:0;
+  filter:blur(3px);
+}
+.mock-cand-info { flex:1; }
+.mock-cand-name { font-size:10px; font-weight:600; color:var(--cream); filter:blur(4px); }
+.mock-cand-spec { font-size:9px; color:var(--muted); }
+.mock-cand-tag {
+  font-size:8px; font-weight:700; padding:2px 6px; border-radius:4px;
+}
+
+/* ─── FEATURES SECTION ────────────── */
+.features-section { background:var(--forest-mid); }
+.features-grid {
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:2px;
+  background:var(--border); border-radius:20px; overflow:hidden;
+  margin-top:56px;
+}
+.feature-card {
+  background:var(--forest-mid); padding:40px 36px;
+  transition:background 0.2s;
+}
+.feature-card:hover { background:var(--forest-lit); }
+.feature-ico {
+  width:48px; height:48px; border-radius:12px;
+  background:var(--forest-lit); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; margin-bottom:20px;
+}
+.feature-title {
+  font-family:'Fraunces', serif; font-size:20px; font-weight:700;
+  color:var(--cream); margin-bottom:10px; line-height:1.2;
+}
+.feature-desc { font-size:14px; color:var(--cream-dim); line-height:1.7; }
+
+/* ─── VS SECTION ──────────────────── */
+.vs-section { }
+.vs-table {
+  margin-top:56px; border-radius:16px; overflow:hidden;
+  border:1px solid var(--border);
+}
+.vs-header {
+  display:grid; grid-template-columns:2fr 1fr 1fr;
+  background:var(--forest-mid);
+  border-bottom:1px solid var(--border);
+}
+.vs-header-cell {
+  padding:20px 28px; font-size:13px; font-weight:600;
+  text-transform:uppercase; letter-spacing:1px;
+}
+.vs-header-cell.agency { color:var(--red); }
+.vs-header-cell.vetsi-col { color:var(--mint); }
+.vs-row {
+  display:grid; grid-template-columns:2fr 1fr 1fr;
+  border-bottom:1px solid rgba(62,207,110,0.06);
+}
+.vs-row:last-child { border-bottom:none; }
+.vs-row:nth-child(odd) { background:rgba(255,255,255,0.01); }
+.vs-cell {
+  padding:16px 28px; font-size:14px; color:var(--cream-dim);
+  display:flex; align-items:center;
+}
+.vs-cell.feature { font-weight:500; color:var(--cream); }
+.vs-cell.agency { color:rgba(239,68,68,0.7); font-size:18px; }
+.vs-cell.vetsi-col { color:var(--mint); font-size:18px; }
+
+/* ─── PRICING ─────────────────────── */
+.pricing-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:56px;
+}
+.price-card {
+  border:1px solid var(--border); border-radius:20px; padding:40px;
+  position:relative; overflow:hidden;
+}
+.price-card.featured {
+  background:var(--mint); border-color:var(--mint);
+}
+.price-card.featured .price-title { color:var(--forest-mid); }
+.price-card.featured .price-amount { color:var(--forest-mid); }
+.price-card.featured .price-period { color:rgba(13,43,31,0.6); }
+.price-card.featured .price-desc { color:rgba(13,43,31,0.7); }
+.price-card.featured .price-item { color:var(--forest-mid); border-color:rgba(13,43,31,0.1); }
+.price-card.featured .price-item::before { color:var(--forest-mid); }
+.price-badge {
+  display:inline-block; background:var(--forest-mid);
+  color:var(--mint); font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:1px;
+  padding:4px 12px; border-radius:100px; margin-bottom:24px;
+}
+.price-title {
+  font-family:'Fraunces', serif; font-size:22px; font-weight:700;
+  color:var(--cream); margin-bottom:8px;
+}
+.price-amount {
+  font-family:'Fraunces', serif; font-size:52px; font-weight:900;
+  color:var(--cream); letter-spacing:-2px; line-height:1;
+}
+.price-period {
+  font-size:16px; color:var(--muted); font-weight:400; letter-spacing:0;
+}
+.price-desc {
+  font-size:14px; color:var(--cream-dim); margin:16px 0 28px; line-height:1.6;
+}
+.price-items { list-style:none; display:flex; flex-direction:column; gap:10px; margin-bottom:32px; }
+.price-item {
+  font-size:14px; color:var(--cream-dim); padding-bottom:10px;
+  border-bottom:1px solid var(--border); display:flex; gap:8px; align-items:flex-start;
+}
+.price-item::before { content:'✓'; color:var(--mint); font-weight:700; flex-shrink:0; }
+.price-btn {
+  display:block; width:100%; text-align:center;
+  padding:14px; border-radius:10px; font-weight:600; font-size:15px;
+  text-decoration:none; transition:all 0.2s; cursor:pointer; border:none;
+  font-family:'DM Sans', sans-serif;
+}
+.price-btn-dark {
+  background:var(--forest-mid); color:var(--mint);
+}
+.price-btn-dark:hover { background:var(--forest-lit); }
+.price-btn-light {
+  background:transparent; color:var(--cream-dim);
+  border:1px solid var(--border);
+}
+.price-btn-light:hover { border-color:var(--mint); color:var(--cream); }
+
+/* ─── FINAL CTA ───────────────────── */
+.final-cta {
+  text-align:center;
+  background:
+    radial-gradient(ellipse 60% 80% at 50% 50%, rgba(62,207,110,0.1) 0%, transparent 70%),
+    var(--forest);
+  padding:120px 24px;
+  border-top:1px solid var(--border);
+}
+.final-cta h2 {
+  font-size:clamp(40px, 6vw, 72px); max-width:700px; margin:0 auto 24px;
+}
+.final-cta p {
+  font-size:18px; color:var(--cream-dim); margin-bottom:48px; line-height:1.65;
+}
+.final-cta-actions { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+
+/* ─── FOOTER ──────────────────────── */
+footer {
+  background:var(--forest-mid); border-top:1px solid var(--border);
+  padding:48px 24px; text-align:center;
+}
+.footer-logo {
+  font-family:'Nunito', sans-serif; font-weight:900; font-size:22px;
+  color:var(--cream); margin-bottom:8px;
+}
+.footer-logo span { color:var(--mint); }
+.footer-tagline { font-size:13px; color:var(--muted); margin-bottom:24px; }
+.footer-links { display:flex; gap:24px; justify-content:center; flex-wrap:wrap; }
+.footer-links a { font-size:13px; color:var(--muted); text-decoration:none; transition:color 0.15s; }
+.footer-links a:hover { color:var(--mint); }
+
+/* ─── SCROLL REVEAL ───────────────── */
+.reveal {
+  opacity:0; transform:translateY(32px);
+  transition:opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible { opacity:1; transform:translateY(0); }
+
+/* ─── RESPONSIVE ──────────────────── */
+@media (max-width:900px) {
+  nav { padding:0 24px; }
+  .nav-links { display:none; }
+  .how-panel.active { grid-template-columns:1fr; }
+  .mockup-wrap { display:none; }
+  .features-grid { grid-template-columns:1fr 1fr; }
+  .problem-grid { grid-template-columns:1fr; }
+  .pricing-grid { grid-template-columns:1fr; }
+  .showcase-grid { grid-template-columns:1fr; gap:32px; }
+}
+
+/* ── MOBILE ── */
+@media (max-width:640px) {
+
+  /* Nav */
+  nav { padding:0 16px; height:52px; }
+  .btn-ghost { display:none; }
+  .btn-primary { font-size:12px; padding:7px 14px; }
+  .nav-logo { font-size:20px; }
+
+  /* Hero */
+  .hero { padding:76px 20px 44px; min-height:auto; }
+  .hero h1 { font-size:clamp(30px,8.5vw,46px); }
+  .hero-sub { font-size:14px; }
+  .hero-badge { font-size:11px; padding:6px 14px; }
+  .hero-actions { flex-direction:column; gap:10px; width:100%; }
+  .btn-hero, .btn-hero-ghost { width:100%; text-align:center; font-size:14px; padding:13px 20px; box-sizing:border-box; }
+
+  /* Hero stats — keep side by side, just shrink */
+  .hero-stats {
+    display:grid !important;
+    grid-template-columns:1fr 1px 1fr !important;
+    gap:0 !important;
+    margin-top:36px !important;
+    padding-top:28px !important;
+    max-width:100% !important;
+  }
+  .hero-stats > div:first-child { padding:0 14px 0 0 !important; }
+  .hero-stats > div:last-child { padding:0 0 0 14px !important; border-top:none !important; padding-top:0 !important; }
+  .hero-stat-val { font-size:20px !important; }
+  .hero-stat-label { font-size:10px !important; line-height:1.4 !important; }
+  .hero-stats > div > div[style*="flex-direction:column"] { gap:10px !important; }
+  .hero-stats > div > div:first-child { font-size:9px !important; margin-bottom:10px !important; }
+
+  /* Sections */
+  section { padding:48px 20px; }
+  .section-headline { font-size:clamp(24px,7vw,38px) !important; }
+  .section-sub { font-size:13px; }
+  .container { padding:0; }
+
+  /* What vetsi is */
+  section[style*="padding:64px"] { padding:44px 20px !important; }
+  div[style*="grid-template-columns:1fr 1fr"][style*="max-width:900px"] {
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+  }
+  div[style*="padding:28px 32px"] { padding:20px 18px !important; }
+
+  /* Problem */
+  .problem-grid { grid-template-columns:1fr !important; gap:10px; margin-top:32px; }
+  .problem-card { padding:20px 18px; }
+  .problem-cost { font-size:28px; }
+  .problem-title { font-size:16px; }
+  .problem-desc { font-size:13px; margin-bottom:14px; }
+
+  /* How it works */
+  .how-tabs { width:100%; }
+  .how-tab { flex:1; padding:9px 8px; font-size:12px; }
+  .how-panel.active { gap:28px; }
+  .step-item { gap:10px; padding:16px 0; }
+  .step-text-title { font-size:14px; }
+  .step-text-desc { font-size:13px; }
+
+  /* Features */
+  .features-section > .container > div[style*="border-radius:16px"] { 
+    grid-template-columns:1fr !important; 
+  }
+  .features-section > .container > div[style*="border-radius:16px"] > div:last-child { display:none; }
+  .features-grid { grid-template-columns:1fr 1fr !important; gap:10px; }
+  .feature-card { padding:16px 14px; }
+  .feature-ico { font-size:20px; margin-bottom:8px; }
+  .feature-title { font-size:12px; }
+  .feature-desc { font-size:11px; line-height:1.5; }
+
+  /* Practice showcase */
+  .practice-showcase section,
+  .practice-showcase { padding:48px 20px; }
+  .showcase-grid { margin-top:32px; gap:28px; }
+  .showcase-title { font-size:20px; }
+  .showcase-body { font-size:13px; }
+  .advert-mock-body { padding:14px 16px; }
+  #landing-map { height:220px !important; }
+
+  /* Pricing */
+  .pricing-grid { grid-template-columns:1fr !important; gap:14px; }
+
+  /* Final CTA */
+  .final-cta { padding:56px 20px; }
+  .final-cta-actions { flex-direction:column; gap:10px; align-items:stretch; }
+  .final-cta-actions a { width:100%; text-align:center; box-sizing:border-box; }
+
+  /* Footer */
+  footer { flex-direction:column !important; gap:12px !important; text-align:center; padding:24px 20px !important; }
+  footer > div { flex-direction:column !important; gap:8px !important; }
+}
+</style>
+<style>
+.practice-showcase { background:var(--forest-mid); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+.showcase-grid { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:start; margin-top:56px; }
+.showcase-label { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--mint); margin-bottom:12px; }
+.showcase-title { font-family:'Fraunces', serif; font-size:28px; font-weight:900; line-height:1.15; color:var(--cream); margin-bottom:12px; }
+.showcase-body { font-size:14px; color:var(--cream-dim); line-height:1.75; margin-bottom:24px; }
+.showcase-points { list-style:none; display:flex; flex-direction:column; gap:10px; margin-bottom:28px; }
+.showcase-points li { font-size:14px; color:var(--cream-dim); display:flex; align-items:flex-start; gap:10px; }
+.showcase-points li::before { content:'✓'; color:var(--mint); font-weight:700; flex-shrink:0; margin-top:1px; }
+
+/* AI advert mock */
+.advert-mock { background:#1a2e23; border:1px solid rgba(62,207,110,0.2); border-radius:14px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.4); }
+.advert-mock-bar { background:#0d2b1f; padding:10px 16px; display:flex; align-items:center; gap:8px; border-bottom:1px solid rgba(62,207,110,0.15); }
+.advert-mock-dot { width:10px; height:10px; border-radius:50%; }
+.advert-mock-title { font-size:12px; color:rgba(240,237,230,0.4); margin-left:6px; font-family:'DM Sans',sans-serif; }
+.advert-mock-body { padding:20px 22px; }
+.advert-mock-tag { display:inline-block; background:rgba(62,207,110,0.12); border:1px solid rgba(62,207,110,0.25); color:var(--mint); font-size:10px; font-weight:700; padding:3px 9px; border-radius:10px; margin-bottom:14px; letter-spacing:0.5px; }
+.advert-mock-head { font-family:'Nunito',sans-serif; font-size:16px; font-weight:900; color:var(--cream); margin-bottom:10px; }
+.advert-mock-line { height:9px; border-radius:4px; background:rgba(240,237,230,0.08); margin-bottom:7px; }
+.advert-mock-line.w100 { width:100%; }
+.advert-mock-line.w88 { width:88%; }
+.advert-mock-line.w75 { width:75%; }
+.advert-mock-line.w60 { width:60%; }
+.advert-mock-line.w45 { width:45%; }
+.advert-mock-line.accent { background:rgba(62,207,110,0.15); width:70%; }
+.advert-mock-divider { border:none; border-top:1px solid rgba(62,207,110,0.1); margin:14px 0; }
+.advert-mock-bullets { display:flex; flex-direction:column; gap:7px; margin-bottom:14px; }
+.advert-mock-bullet { display:flex; align-items:center; gap:8px; }
+.advert-mock-bullet::before { content:'•'; color:var(--mint); font-size:16px; flex-shrink:0; }
+.advert-mock-bullet-line { height:8px; border-radius:4px; background:rgba(240,237,230,0.08); }
+.advert-mock-btn { background:var(--mint); color:var(--forest-mid); font-family:'Nunito',sans-serif; font-size:11px; font-weight:800; padding:7px 14px; border-radius:7px; display:inline-block; margin-top:6px; }
+.ai-badge { display:flex; align-items:center; gap:8px; background:rgba(62,207,110,0.1); border:1px solid rgba(62,207,110,0.2); border-radius:8px; padding:10px 14px; margin-bottom:16px; }
+.ai-badge-icon { font-size:18px; }
+.ai-badge-text { font-size:12px; color:var(--mint); font-weight:600; }
+
+/* Practice list mock */
+.practice-list-mock { display:flex; flex-direction:column; gap:10px; }
+.practice-card-mock { background:#1a2e23; border:1px solid rgba(62,207,110,0.12); border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:14px; transition:all 0.2s; }
+.practice-card-mock.hiring { background:rgba(62,207,110,0.06); border:2px solid var(--mint); box-shadow:0 0 24px rgba(62,207,110,0.15); }
+.pcm-av { width:40px; height:40px; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.pcm-av.gold { background:linear-gradient(135deg,#f59e0b,#d97706); box-shadow:0 0 16px rgba(245,158,11,0.35); }
+.pcm-av.plain { background:#163d2c; }
+.pcm-info { flex:1; }
+.pcm-name { font-size:13px; font-weight:700; color:var(--cream); margin-bottom:3px; display:flex; align-items:center; gap:7px; }
+.pcm-hiring-badge { font-size:9px; font-weight:800; background:var(--mint); color:var(--forest); padding:2px 7px; border-radius:6px; letter-spacing:0.3px; }
+.pcm-star-badge { font-size:10px; font-weight:700; color:#f59e0b; }
+.pcm-sub { font-size:11px; color:rgba(240,237,230,0.4); }
+.pcm-rating { font-size:11px; color:rgba(240,237,230,0.35); margin-left:auto; white-space:nowrap; }
+.pcm-rating .stars { color:#f59e0b; }
+.mock-caption { font-size:11px; color:rgba(240,237,230,0.3); margin-top:12px; text-align:center; font-style:italic; }
+
+@media (max-width:900px) { .showcase-grid { grid-template-columns:1fr; gap:32px; } }
+
+/* VS mobile/desktop toggle */
+.vs-mobile-only { display:none; }
+.vs-desktop-only { display:block; }
+
+/* Mobile VS table */
+.vs-mob-header {
+  display:grid; grid-template-columns:1fr 1fr 1fr 1fr;
+  padding:10px 0; border-bottom:2px solid var(--border);
+  margin-bottom:2px;
+}
+.vs-mob-row {
+  display:grid; grid-template-columns:1fr 1fr 1fr 1fr;
+  border-bottom:1px solid rgba(62,207,110,0.07);
+}
+.vs-mob-row:last-child { border-bottom:none; }
+.vs-mob-feat {
+  font-size:11px; color:var(--cream-dim); padding:10px 8px 10px 0;
+  line-height:1.4; display:flex; align-items:center;
+}
+.vs-mob-col {
+  font-size:12px; font-weight:700; padding:10px 4px;
+  text-align:center; display:flex; align-items:center; justify-content:center;
+}
+.vs-mob-header .vs-mob-col { font-size:10px; font-weight:700; letter-spacing:0.5px; }
+.vs-mob-header .vs-mob-feat { font-size:10px; }
+.vs-mob-good { color:var(--mint); }
+.vs-mob-bad  { color:rgba(239,68,68,0.7); }
+.vs-mob-warn { color:#f59e0b; }
+
+@media (max-width:640px) {
+  .vs-mobile-only { display:block; }
+  .vs-desktop-only { display:none; }
+}</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav id="navbar">
+  <div class="nav-logo">vet<span>si</span></div>
+  <ul class="nav-links"></ul>
+  <div class="nav-cta">
+    <a href="login.html" class="btn-ghost">Sign in</a>
+    <a href="login.html" class="btn-primary">Get started free</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+
+  <div class="hero-badge">
+    <div class="badge-dot"></div>
+    Now live for UK vets
+  </div>
+
+  <h1 class="display">
+    The smarter way<br>
+    to <span class="accent italic">hire</span> &amp; be <span class="accent italic">hired</span><br>
+    in veterinary
+  </h1>
+
+  <p class="hero-sub">
+    vetsi connects UK vets with practices directly — no agency fees, no CV spam, no middlemen. Candidates browse anonymously. Practices receive warm leads. Everyone wins.
+  </p>
+
+  <div class="hero-actions">
+    <a href="login.html?role=vet" class="btn-hero">Join as a vet — it's free →</a>
+    <a href="login.html?role=hospital" class="btn-hero-ghost">Register your practice</a>
+  </div>
+
+  <div class="hero-stats" style="display:grid;grid-template-columns:1fr 1px 1fr;gap:0;max-width:760px;width:100%;margin-top:72px;padding-top:48px;border-top:1px solid var(--border);">
+
+    <!-- For Vets -->
+    <div style="padding:0 40px 0 0;text-align:left;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--mint);margin-bottom:20px;">🐾 For vets</div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <div class="hero-stat-val">5,331<span>+</span></div>
+          <div class="hero-stat-label">UK practices on the map</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">£<span>0</span></div>
+          <div class="hero-stat-label">Cost to join — free forever</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">100<span>%</span></div>
+          <div class="hero-stat-label">Anonymous until you're ready</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div style="background:var(--border);width:1px;"></div>
+
+    <!-- For Practices -->
+    <div style="padding:0 0 0 40px;text-align:left;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--mint);margin-bottom:20px;">🏥 For practices</div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <div class="hero-stat-val">£<span>0</span></div>
+          <div class="hero-stat-label">Placement fees — ever</div>
+        </div>
+        <div>
+          <div class="hero-stat-val"><span style="text-decoration:line-through;opacity:0.35;font-size:0.6em;vertical-align:middle;">£99</span> £49</div>
+          <div class="hero-stat-label">Early adopter price/month</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">Free</div>
+          <div class="hero-stat-label">To claim your practice profile</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── AUDIENCE SELECTOR ── -->
+<section id="audience-selector" style="padding:64px 24px 0;border-top:1px solid var(--border);">
+  <div class="container">
+    <div class="reveal" style="text-align:center;margin-bottom:40px;">
+      <p class="section-label" style="display:block;text-align:center;">Who are you?</p>
+      <h2 class="display section-headline" style="font-size:clamp(28px,4vw,44px);margin-bottom:16px;">Pick your side — then see exactly what vetsi does for you.</h2>
+      <p class="section-sub" style="max-width:480px;margin:0 auto;">Two very different experiences, one platform. Choose below and the whole page changes.</p>
+    </div>
+
+    <!-- Audience toggle buttons -->
+    <div class="reveal" style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:64px;">
+      <button id="aud-btn-vet" class="aud-btn aud-btn-active" onclick="switchAudience('vet')">
+        <span class="aud-btn-icon">🐾</span>
+        <span class="aud-btn-label">I'm a vet</span>
+        <span class="aud-btn-sub">Browse practices for free</span>
+      </button>
+      <button id="aud-btn-practice" class="aud-btn" onclick="switchAudience('practice')">
+        <span class="aud-btn-icon">🏥</span>
+        <span class="aud-btn-label">I'm a practice</span>
+        <span class="aud-btn-sub">Find and hire great vets</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ── VET AUDIENCE PANEL ── -->
+<div id="aud-panel-vet" class="aud-panel">
+
+  <!-- VET: MAP DEMO -->
+  <section style="padding:0 24px 80px;border-bottom:1px solid var(--border);">
+    <div class="container">
+      <div class="reveal" style="text-align:center;margin-bottom:56px;">
+        <p class="section-label" style="display:block;text-align:center;">The map</p>
+        <h2 class="display section-headline">Every UK practice. On a map. Anonymous.</h2>
+        <p class="section-sub" style="max-width:520px;margin:0 auto;">All 5,331 UK vet practices are pre-loaded. Filter by species, ownership, distance and hiring status. Gold stars mean they want someone right now.</p>
+      </div>
+      <div class="showcase-grid reveal" style="gap:40px;align-items:center;">
+        <div>
+          <div style="display:flex;flex-direction:column;gap:20px;">
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="width:36px;height:36px;border-radius:10px;background:rgba(62,207,110,0.12);border:1px solid rgba(62,207,110,0.25);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🗺️</div>
+              <div>
+                <div style="font-size:15px;font-weight:700;color:var(--cream);margin-bottom:4px;">Browse without being seen</div>
+                <div style="font-size:13px;color:var(--cream-dim);line-height:1.65;">Your current employer has no idea you're looking. You're completely invisible until you choose otherwise.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="width:36px;height:36px;border-radius:10px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⭐</div>
+              <div>
+                <div style="font-size:15px;font-weight:700;color:var(--cream);margin-bottom:4px;">Gold stars = actively hiring</div>
+                <div style="font-size:13px;color:var(--cream-dim);line-height:1.65;">Practices that are ready to talk right now get a gold star on the map. Filter to only show hiring practices in seconds.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="width:36px;height:36px;border-radius:10px;background:rgba(62,207,110,0.12);border:1px solid rgba(62,207,110,0.25);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🔍</div>
+              <div>
+                <div style="font-size:15px;font-weight:700;color:var(--cream);margin-bottom:4px;">Filter by what actually matters to you</div>
+                <div style="font-size:13px;color:var(--cream-dim);line-height:1.65;">Species mix, ownership type (independent vs corporate), salary range, Google rating, RCVS accreditation — it's all there.</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:28px;">
+            <a href="login.html?role=vet" class="btn-hero" style="font-size:13px;padding:11px 22px;">Explore the map free →</a>
+          </div>
+        </div>
+        <div class="mockup-wrap">
+          <div class="screen-device" style="font-size:0;">
+            <div class="screen-bar" style="font-size:14px;">
+              <div class="screen-dot" style="background:#ef4444"></div>
+              <div class="screen-dot" style="background:#f59e0b"></div>
+              <div class="screen-dot" style="background:#22c55e"></div>
+              <div style="flex:1;margin-left:10px;background:rgba(255,255,255,0.05);border-radius:4px;height:15px;display:flex;align-items:center;padding:0 8px;">
+                <span style="font-size:9px;color:rgba(240,237,230,0.25);font-family:'DM Sans',sans-serif;">vetsi.co.uk</span>
+              </div>
+            </div>
+            <div style="display:flex;height:400px;overflow:hidden;font-family:'DM Sans',sans-serif;font-size:12px;">
+              <div style="width:48px;background:#061510;border-right:1px solid rgba(62,207,110,0.1);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:4px;flex-shrink:0;">
+                <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:13px;color:#f0ede6;margin-bottom:10px;letter-spacing:-0.5px;">v<span style="color:#3ecf6e;">s</span></div>
+                <div style="width:30px;height:30px;border-radius:7px;background:rgba(62,207,110,0.15);border:1px solid rgba(62,207,110,0.35);display:flex;align-items:center;justify-content:center;font-size:13px;">🗺️</div>
+                <div style="width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:0.35;">💬</div>
+                <div style="width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:0.35;">⚡</div>
+                <div style="width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:0.35;">💷</div>
+                <div style="width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:0.35;">🐾</div>
+                <div style="width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:0.35;">📰</div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+                <div style="height:36px;background:#0d2b1f;border-bottom:1px solid rgba(62,207,110,0.1);display:flex;align-items:center;padding:0 10px;gap:8px;flex-shrink:0;">
+                  <span style="font-size:11px;font-weight:700;color:#f0ede6;flex:1;">Explore Practices</span>
+                  <div style="background:#163d2c;border:1px solid rgba(62,207,110,0.18);border-radius:5px;padding:3px 8px;display:flex;align-items:center;gap:4px;">
+                    <span style="font-size:9px;color:rgba(240,237,230,0.35);">📍 YO1 — showing distances</span>
+                  </div>
+                </div>
+                <div style="flex:1;display:flex;overflow:hidden;">
+                  <div style="flex:1;position:relative;overflow:hidden;background:#0a1e14;">
+                    <div style="position:absolute;inset:0;opacity:0.06;background-image:linear-gradient(#3ecf6e 1px,transparent 1px),linear-gradient(90deg,#3ecf6e 1px,transparent 1px);background-size:22px 22px;"></div>
+                    <svg style="position:absolute;inset:0;width:100%;height:100%;" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M0,160 C80,145 140,170 200,155 S280,140 340,150" stroke="rgba(62,207,110,0.13)" stroke-width="2.5" fill="none"/>
+                      <path d="M0,90 L340,78" stroke="rgba(62,207,110,0.09)" stroke-width="1.5" fill="none"/>
+                      <path d="M120,0 Q125,90 118,400" stroke="rgba(62,207,110,0.1)" stroke-width="2" fill="none"/>
+                      <path d="M220,0 Q218,100 215,400" stroke="rgba(62,207,110,0.08)" stroke-width="1.5" fill="none"/>
+                      <path d="M0,260 Q120,245 200,255 T340,248" stroke="rgba(62,207,110,0.08)" stroke-width="1.5" fill="none"/>
+                    </svg>
+                    <!-- Gold star pin (hiring) -->
+                    <div style="position:absolute;top:22%;left:34%;transform:translate(-50%,-100%);">
+                      <div style="width:22px;height:22px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:50%;border:3px solid #fbbf24;display:flex;align-items:center;justify-content:center;font-size:11px;box-shadow:0 0 14px rgba(245,158,11,0.7);">⭐</div>
+                      <div style="position:absolute;bottom:26px;left:50%;transform:translateX(-50%);background:#0d2b1f;border:1px solid rgba(62,207,110,0.45);border-radius:7px;padding:6px 10px;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,0.6);">
+                        <div style="font-size:9px;font-weight:700;color:#f0ede6;margin-bottom:2px;">Pawside Vets York</div>
+                        <div style="font-size:8px;color:#3ecf6e;font-weight:600;">★ 4.8 &nbsp;·&nbsp; Hiring now</div>
+                        <div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%) rotate(45deg);width:8px;height:8px;background:#0d2b1f;border-right:1px solid rgba(62,207,110,0.45);border-bottom:1px solid rgba(62,207,110,0.45);"></div>
+                      </div>
+                    </div>
+                    <!-- Gold star pin 2 (hiring) -->
+                    <div style="position:absolute;top:56%;left:62%;transform:translate(-50%,-100%);">
+                      <div style="width:20px;height:20px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:50%;border:2.5px solid #fbbf24;display:flex;align-items:center;justify-content:center;font-size:10px;box-shadow:0 0 10px rgba(245,158,11,0.55);">⭐</div>
+                    </div>
+                    <!-- Plain pins -->
+                    <div style="position:absolute;top:47%;left:60%;transform:translate(-50%,-100%);">
+                      <div style="width:14px;height:14px;background:#3ecf6e;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.8);opacity:0.85;"></div>
+                    </div>
+                    <div style="position:absolute;top:16%;left:67%;transform:translate(-50%,-100%);">
+                      <div style="width:13px;height:13px;background:#3ecf6e;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.8);opacity:0.6;"></div>
+                    </div>
+                    <div style="position:absolute;top:64%;left:22%;transform:translate(-50%,-100%);">
+                      <div style="width:12px;height:12px;background:#3ecf6e;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.7);opacity:0.55;"></div>
+                    </div>
+                    <div style="position:absolute;top:38%;left:78%;transform:translate(-50%,-100%);">
+                      <div style="width:12px;height:12px;background:#3ecf6e;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.7);opacity:0.5;"></div>
+                    </div>
+                    <div style="position:absolute;top:72%;left:52%;transform:translate(-50%,-100%);">
+                      <div style="width:11px;height:11px;background:#3ecf6e;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.6);opacity:0.45;"></div>
+                    </div>
+                  </div>
+                  <div style="width:196px;background:#0d2b1f;border-left:1px solid rgba(62,207,110,0.1);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;">
+                    <div style="padding:8px 10px 7px;border-bottom:1px solid rgba(62,207,110,0.1);">
+                      <div style="font-size:10.5px;font-weight:700;color:#f0ede6;margin-bottom:6px;">28 practices near York</div>
+                      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                        <span style="font-size:8px;padding:2.5px 8px;border-radius:12px;background:#f59e0b;color:#0d2b1f;font-weight:700;">⭐ Hiring</span>
+                        <span style="font-size:8px;padding:2.5px 7px;border-radius:12px;border:1px solid rgba(62,207,110,0.2);color:rgba(240,237,230,0.45);">All</span>
+                        <span style="font-size:8px;padding:2.5px 7px;border-radius:12px;border:1px solid rgba(62,207,110,0.2);color:rgba(240,237,230,0.45);">Independent</span>
+                        <span style="font-size:8px;padding:2.5px 7px;border-radius:12px;border:1px solid rgba(62,207,110,0.2);color:rgba(240,237,230,0.45);">Small Animal</span>
+                      </div>
+                    </div>
+                    <div style="overflow-y:auto;flex:1;">
+                      <div style="padding:9px 10px;border-bottom:1px solid rgba(62,207,110,0.08);background:rgba(245,158,11,0.06);border-left:2px solid #f59e0b;">
+                        <div style="display:flex;align-items:flex-start;gap:7px;margin-bottom:5px;">
+                          <div style="width:28px;height:28px;border-radius:7px;background:#163d2c;border:1px solid rgba(245,158,11,0.25);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🐾</div>
+                          <div>
+                            <div style="font-size:9.5px;font-weight:700;color:#f0ede6;line-height:1.3;">Pawside Vets York</div>
+                            <div style="font-size:8px;color:rgba(240,237,230,0.38);">Gillygate, York · 1.2 mi</div>
+                          </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;">
+                          <span style="font-size:7.5px;padding:1.5px 5px;border-radius:8px;background:#f59e0b;color:#0d2b1f;font-weight:700;">⭐ Hiring</span>
+                          <span style="font-size:7.5px;padding:1.5px 5px;border-radius:8px;border:1px solid rgba(62,207,110,0.25);color:#3ecf6e;">Independent</span>
+                          <span style="font-size:7.5px;color:#f4b942;margin-left:auto;">★ 4.8</span>
+                        </div>
+                      </div>
+                      <div style="padding:9px 10px;border-bottom:1px solid rgba(62,207,110,0.06);">
+                        <div style="display:flex;align-items:flex-start;gap:7px;margin-bottom:5px;">
+                          <div style="width:28px;height:28px;border-radius:7px;background:#163d2c;border:1px solid rgba(245,158,11,0.2);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🐕</div>
+                          <div>
+                            <div style="font-size:9.5px;font-weight:700;color:#f0ede6;line-height:1.3;">Meadow Lane Pet Care</div>
+                            <div style="font-size:8px;color:rgba(240,237,230,0.38);">Monks Cross · 6.8 mi</div>
+                          </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:3px;">
+                          <span style="font-size:7.5px;padding:1.5px 5px;border-radius:8px;background:#f59e0b;color:#0d2b1f;font-weight:700;">⭐ Hiring</span>
+                          <span style="font-size:7.5px;color:#f4b942;margin-left:auto;">★ 4.3</span>
+                        </div>
+                      </div>
+                      <div style="padding:9px 10px;border-bottom:1px solid rgba(62,207,110,0.06);">
+                        <div style="display:flex;align-items:flex-start;gap:7px;margin-bottom:5px;">
+                          <div style="width:28px;height:28px;border-radius:7px;background:#163d2c;border:1px solid rgba(62,207,110,0.12);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🐄</div>
+                          <div>
+                            <div style="font-size:9.5px;font-weight:700;color:#f0ede6;line-height:1.3;">Oakfield Farm Vets</div>
+                            <div style="font-size:8px;color:rgba(240,237,230,0.38);">Murton, York · 3.4 mi</div>
+                          </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:3px;">
+                          <span style="font-size:7.5px;padding:1.5px 5px;border-radius:8px;border:1px solid rgba(62,207,110,0.2);color:rgba(240,237,230,0.5);">Farm Animal</span>
+                          <span style="font-size:7.5px;color:#f4b942;margin-left:auto;">★ 4.6</span>
+                        </div>
+                      </div>
+                      <div style="padding:9px 10px;">
+                        <div style="display:flex;align-items:flex-start;gap:7px;margin-bottom:5px;">
+                          <div style="width:28px;height:28px;border-radius:7px;background:#163d2c;border:1px solid rgba(62,207,110,0.12);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🐎</div>
+                          <div>
+                            <div style="font-size:9.5px;font-weight:700;color:#f0ede6;line-height:1.3;">Pennine Equine Clinic</div>
+                            <div style="font-size:8px;color:rgba(240,237,230,0.38);">Malton, York · 8.2 mi</div>
+                          </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:3px;">
+                          <span style="font-size:7.5px;padding:1.5px 5px;border-radius:8px;border:1px solid rgba(62,207,110,0.2);color:#3ecf6e;">Independent</span>
+                          <span style="font-size:7.5px;color:#f4b942;margin-left:auto;">★ 4.9</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VET: ANONYMOUS ENQUIRY -->
+  <section style="padding:80px 24px;border-bottom:1px solid var(--border);">
+    <div class="container">
+      <div class="showcase-grid reveal" style="gap:48px;align-items:center;">
+        <div>
+          <div class="showcase-label">👻 Anonymous enquiries</div>
+          <h3 class="showcase-title">Message a practice — without revealing who you are</h3>
+          <p class="showcase-body">Send an anonymous enquiry to any practice on vetsi without expressing interest. Ask about the role, the rota, OOH commitments, the team — all before anyone knows your name. You control exactly when, and if, you ever reveal yourself.</p>
+          <ul class="showcase-points">
+            <li>Your current employer never finds out you reached out</li>
+            <li>Share as little or as much as you like at each stage</li>
+            <li>No agency passing your CV around without permission</li>
+            <li>Move from anonymous to named only when you feel ready</li>
+          </ul>
+          <div style="margin-top:20px;background:rgba(62,207,110,0.06);border:1px solid rgba(62,207,110,0.2);border-radius:10px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:18px;flex-shrink:0;line-height:1.3;">💡</span>
+            <span style="font-size:13px;color:var(--cream-dim);line-height:1.65;">You can reach out to any of the 5,331 practices. If they're on vetsi, the conversation starts immediately. If they're not, we contact them on your behalf with a warm, anonymous lead, inviting them to reply through vetsi.</span>
+          </div>
+          <div style="margin-top:20px;">
+            <a href="login.html?role=vet" class="btn-hero" style="font-size:13px;padding:11px 22px;">Start exploring anonymously →</a>
+          </div>
+        </div>
+        <div>
+          <!-- Anonymous enquiry mock -->
+          <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(62,207,110,0.25);box-shadow:0 24px 60px rgba(0,0,0,0.4);background:#0d2b1f;">
+            <div style="padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(62,207,110,0.15);">
+              <div style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#3ecf6e;"></div>
+              <div style="font-size:12px;color:rgba(240,237,230,0.4);margin-left:6px;">Direct Message — Pawside Vets York</div>
+            </div>
+            <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+              <!-- Practice message -->
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="width:32px;height:32px;border-radius:8px;background:#163d2c;border:1px solid rgba(62,207,110,0.2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🐾</div>
+                <div style="background:#163d2c;border:1px solid rgba(62,207,110,0.15);border-radius:0 10px 10px 10px;padding:10px 14px;max-width:260px;">
+                  <div style="font-size:10px;font-weight:700;color:var(--mint);margin-bottom:5px;">Pawside Vets York</div>
+                  <div style="font-size:12px;color:rgba(240,237,230,0.8);line-height:1.6;">Hi there! Thanks for reaching out. We're a 6-vet independent practice in York. Happy to chat about the role — what would you like to know?</div>
+                </div>
+              </div>
+              <!-- Vet anonymous message -->
+              <div style="display:flex;gap:10px;align-items:flex-start;justify-content:flex-end;">
+                <div style="background:rgba(62,207,110,0.12);border:1px solid rgba(62,207,110,0.2);border-radius:10px 0 10px 10px;padding:10px 14px;max-width:260px;">
+                  <div style="font-size:10px;font-weight:700;color:rgba(62,207,110,0.7);margin-bottom:5px;">VetsiVet_7243 · Anonymous</div>
+                  <div style="font-size:12px;color:rgba(240,237,230,0.8);line-height:1.6;">I'm a small animal GP with 4 years experience. What does your OOH setup look like, and is there any flexibility on the rota?</div>
+                </div>
+                <div style="width:32px;height:32px;border-radius:8px;background:rgba(62,207,110,0.15);border:1px solid rgba(62,207,110,0.3);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">👤</div>
+              </div>
+              <!-- Privacy note -->
+              <div style="background:rgba(62,207,110,0.06);border:1px solid rgba(62,207,110,0.15);border-radius:8px;padding:10px 14px;display:flex;gap:8px;align-items:center;">
+                <span style="font-size:14px;">🔒</span>
+                <span style="font-size:11px;color:rgba(240,237,230,0.55);line-height:1.5;">Your identity is hidden. Pawside Vets York only sees your specialty and experience. You decide when to reveal more.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VET: MESSAGING -->
+  <section style="padding:80px 24px;border-bottom:1px solid var(--border);">
+    <div class="container">
+      <div class="showcase-grid reveal" style="gap:48px;align-items:center;direction:rtl;">
+        <div style="direction:ltr;">
+          <div class="showcase-label">💬 Direct messaging</div>
+          <h3 class="showcase-title">Talk directly to practices — no agency in the middle</h3>
+          <p class="showcase-body">Once you've started a conversation, vetsi keeps it going. No recruiter forwarding things on your behalf, no waiting days for a callback. Just you and the practice, talking directly. Upgrade your visibility at any point — share your full profile only when you're ready to be considered.</p>
+          <ul class="showcase-points">
+            <li>Message any practice that has claimed their profile on vetsi</li>
+            <li>Full conversation history in one place</li>
+            <li>Practices are notified the moment you send a message</li>
+            <li>Share your Career Snapshot when you're ready to be taken seriously</li>
+          </ul>
+        </div>
+        <div style="direction:ltr;">
+          <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(62,207,110,0.25);box-shadow:0 24px 60px rgba(0,0,0,0.4);background:#0d2b1f;">
+            <div style="padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(62,207,110,0.15);">
+              <div style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#3ecf6e;"></div>
+              <div style="font-size:12px;color:rgba(240,237,230,0.4);margin-left:6px;">Messages</div>
+            </div>
+            <div style="display:flex;height:260px;">
+              <div style="width:180px;border-right:1px solid rgba(62,207,110,0.1);overflow-y:auto;">
+                <div style="padding:10px 12px;background:rgba(62,207,110,0.07);border-left:2px solid #3ecf6e;cursor:pointer;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                    <span style="font-size:14px;">🐾</span>
+                    <span style="font-size:11px;font-weight:700;color:#f0ede6;">Pawside Vets York</span>
+                  </div>
+                  <div style="font-size:10px;color:rgba(240,237,230,0.4);padding-left:22px;">You: Happy to share my...</div>
+                </div>
+                <div style="padding:10px 12px;border-bottom:1px solid rgba(62,207,110,0.06);">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                    <span style="font-size:14px;">🐕</span>
+                    <span style="font-size:11px;font-weight:700;color:#f0ede6;">Bramble Street Vets</span>
+                  </div>
+                  <div style="font-size:10px;color:rgba(240,237,230,0.4);padding-left:22px;">Great to hear from you...</div>
+                </div>
+                <div style="padding:10px 12px;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                    <span style="font-size:14px;">🐎</span>
+                    <span style="font-size:11px;font-weight:700;color:#f0ede6;">Pennine Equine Clinic</span>
+                  </div>
+                  <div style="font-size:10px;color:rgba(240,237,230,0.4);padding-left:22px;">We'd love to tell you...</div>
+                </div>
+              </div>
+              <div style="flex:1;padding:14px;display:flex;flex-direction:column;gap:10px;">
+                <div style="background:#163d2c;border-radius:0 8px 8px 8px;padding:8px 12px;font-size:11px;color:rgba(240,237,230,0.75);line-height:1.55;max-width:85%;">We do 1-in-6 OOH with a dedicated nurse on all out-of-hours shifts.</div>
+                <div style="background:rgba(62,207,110,0.1);border-radius:8px 0 8px 8px;padding:8px 12px;font-size:11px;color:rgba(240,237,230,0.75);line-height:1.55;max-width:85%;align-self:flex-end;">That works well for me. I'm happy to share my full profile now.</div>
+                <div style="background:#163d2c;border-radius:0 8px 8px 8px;padding:8px 12px;font-size:11px;color:rgba(240,237,230,0.75);line-height:1.55;max-width:85%;">Brilliant — just saw it. Really impressive background. Can we arrange a call this week?</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VET: VET SPACE -->
+  <section style="padding:80px 24px;border-bottom:1px solid var(--border);">
+    <div class="container">
+      <div class="reveal" style="background:rgba(62,207,110,0.06);border:1px solid var(--border);border-radius:16px;padding:28px 32px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;">
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mint);margin-bottom:10px;">🐾 Vet Space — Community</div>
+          <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:var(--cream);margin-bottom:8px;line-height:1.2;">A place to talk — even if you're not looking for a job</div>
+          <div style="font-size:14px;color:var(--cream-dim);line-height:1.75;max-width:560px;">An anonymous forum just for UK vets. Discuss salary without career risk, talk through clinical cases, share CPD recommendations — all under a pseudonymous identity. No real name, no LinkedIn politics, no judgement.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">
+            <span style="font-size:12px;padding:5px 12px;border-radius:20px;background:rgba(62,207,110,0.1);border:1px solid rgba(62,207,110,0.2);color:var(--cream-dim);">💰 Salary talk</span>
+            <span style="font-size:12px;padding:5px 12px;border-radius:20px;background:rgba(62,207,110,0.1);border:1px solid rgba(62,207,110,0.2);color:var(--cream-dim);">🩺 Clinical cases</span>
+            <span style="font-size:12px;padding:5px 12px;border-radius:20px;background:rgba(62,207,110,0.1);border:1px solid rgba(62,207,110,0.2);color:var(--cream-dim);">🎓 CPD tips</span>
+            <span style="font-size:12px;padding:5px 12px;border-radius:20px;background:rgba(62,207,110,0.1);border:1px solid rgba(62,207,110,0.2);color:var(--cream-dim);">🗺️ Career moves</span>
+            <span style="font-size:12px;padding:5px 12px;border-radius:20px;background:rgba(62,207,110,0.1);border:1px solid rgba(62,207,110,0.2);color:var(--cream-dim);">🧠 Wellbeing</span>
+          </div>
+        </div>
+        <div style="flex-shrink:0;text-align:center;">
+          <div style="font-size:52px;margin-bottom:8px;">💬</div>
+          <a href="login.html?role=vet" class="btn-hero" style="font-size:12px;padding:9px 18px;white-space:nowrap;">Join the conversation →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VET: NEWS & CPD -->
+  <section style="padding:80px 24px 80px;">
+    <div class="container">
+      <div class="reveal" style="text-align:center;margin-bottom:48px;">
+        <p class="section-label" style="display:block;text-align:center;">News &amp; CPD</p>
+        <h2 class="display section-headline">Stay sharp. Stay informed.</h2>
+        <p class="section-sub" style="max-width:500px;margin:0 auto;">Live feeds from Vet Times, BVA, RCVS and more — curated in one place. Plus upcoming CPD events so you never miss what matters.</p>
+      </div>
+      <div class="reveal" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:760px;margin:0 auto;">
+        <div style="background:rgba(62,207,110,0.05);border:1px solid var(--border);border-radius:14px;padding:24px;">
+          <div style="font-size:24px;margin-bottom:12px;">📰</div>
+          <div style="font-size:15px;font-weight:700;color:var(--cream);margin-bottom:8px;">Live vet news</div>
+          <div style="font-size:13px;color:var(--cream-dim);line-height:1.65;margin-bottom:16px;">Real-time articles from Vet Times, BVA, RCVS and VetSurgeon — all in one feed, updated continuously.</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(62,207,110,0.1);border-radius:8px;padding:10px 12px;">
+              <div style="font-size:10px;color:var(--mint);font-weight:700;margin-bottom:3px;">BVA · 2h ago</div>
+              <div style="font-size:11px;color:var(--cream-dim);line-height:1.5;">BVA calls for urgent review of OOH requirements in mixed practices</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(62,207,110,0.1);border-radius:8px;padding:10px 12px;">
+              <div style="font-size:10px;color:var(--mint);font-weight:700;margin-bottom:3px;">Vet Times · 5h ago</div>
+              <div style="font-size:11px;color:var(--cream-dim);line-height:1.5;">New RCVS guidance on remote prescribing published</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:rgba(62,207,110,0.05);border:1px solid var(--border);border-radius:14px;padding:24px;">
+          <div style="font-size:24px;margin-bottom:12px;">🎓</div>
+          <div style="font-size:15px;font-weight:700;color:var(--cream);margin-bottom:8px;">CPD events</div>
+          <div style="font-size:13px;color:var(--cream-dim);line-height:1.65;margin-bottom:16px;">Upcoming CPD courses, webinars and conferences — curated and kept up to date so you can plan ahead.</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(62,207,110,0.1);border-radius:8px;padding:10px 12px;">
+              <div style="font-size:10px;color:#f4b942;font-weight:700;margin-bottom:3px;">14 May 2025 · Online</div>
+              <div style="font-size:11px;color:var(--cream-dim);line-height:1.5;">Advanced Orthopaedics for General Practice — BSAVA Webinar</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(62,207,110,0.1);border-radius:8px;padding:10px 12px;">
+              <div style="font-size:10px;color:#f4b942;font-weight:700;margin-bottom:3px;">21 May 2025 · Manchester</div>
+              <div style="font-size:11px;color:var(--cream-dim);line-height:1.5;">Small Animal Internal Medicine Day — VetCPD</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="reveal" style="text-align:center;margin-top:36px;">
+        <a href="login.html?role=vet" class="btn-hero" style="font-size:13px;padding:11px 22px;">Join free to access everything →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- VET: SALARY BENCHMARKING -->
+  <section style="padding:80px 24px 80px;border-top:1px solid var(--border);">
+    <div class="container">
+      <div class="showcase-grid reveal" style="gap:48px;align-items:center;">
+        <div>
+          <div class="showcase-label">💷 Salary benchmarking</div>
+          <h3 class="showcase-title">Know your worth before any conversation.</h3>
+          <p class="showcase-body">See real market rate data by specialty, experience level, species mix and region. Whether you're thinking of moving or just wondering if you're being paid fairly — vetsi's benchmarking tool gives you the numbers to back yourself up.</p>
+          <ul class="showcase-points">
+            <li>Filter by specialty, years of experience and practice type</li>
+            <li>Compare independent vs corporate salary ranges side by side</li>
+            <li>See regional breakdowns across the UK</li>
+            <li>Walk into any salary conversation knowing exactly where you stand</li>
+          </ul>
+          <div style="margin-top:24px;">
+            <a href="login.html?role=vet" class="btn-hero" style="font-size:13px;padding:11px 22px;">Check your market rate free →</a>
+          </div>
+        </div>
+        <div>
+          <!-- Salary benchmarking mock -->
+          <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(62,207,110,0.25);box-shadow:0 24px 60px rgba(0,0,0,0.4);background:#0d2b1f;">
+            <div style="padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(62,207,110,0.15);">
+              <div style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#3ecf6e;"></div>
+              <div style="font-size:12px;color:rgba(240,237,230,0.4);margin-left:6px;">Salary Benchmarking</div>
+            </div>
+            <div style="padding:20px;">
+              <!-- Filters -->
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+                <div style="background:#163d2c;border:1px solid rgba(62,207,110,0.25);border-radius:8px;padding:5px 12px;font-size:11px;color:var(--mint);font-weight:600;">Small Animal GP</div>
+                <div style="background:#163d2c;border:1px solid rgba(62,207,110,0.25);border-radius:8px;padding:5px 12px;font-size:11px;color:var(--mint);font-weight:600;">3–6 years</div>
+                <div style="background:#163d2c;border:1px solid rgba(62,207,110,0.25);border-radius:8px;padding:5px 12px;font-size:11px;color:var(--mint);font-weight:600;">Yorkshire</div>
+              </div>
+              <!-- Your salary indicator -->
+              <div style="background:rgba(62,207,110,0.06);border:1px solid rgba(62,207,110,0.15);border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+                <div style="font-size:10px;color:rgba(240,237,230,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Market range for your profile</div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;">
+                  <span style="font-family:'Fraunces',serif;font-size:28px;font-weight:900;color:var(--cream);">£38k</span>
+                  <span style="font-size:14px;color:rgba(240,237,230,0.4);">–</span>
+                  <span style="font-family:'Fraunces',serif;font-size:28px;font-weight:900;color:var(--mint);">£48k</span>
+                  <span style="font-size:12px;color:rgba(240,237,230,0.35);">/year</span>
+                </div>
+                <!-- Bar -->
+                <div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;position:relative;overflow:hidden;">
+                  <div style="position:absolute;left:0;top:0;height:100%;width:72%;background:linear-gradient(90deg,rgba(62,207,110,0.4),var(--mint));border-radius:4px;"></div>
+                  <!-- Your marker -->
+                  <div style="position:absolute;top:-3px;left:54%;width:14px;height:14px;background:var(--cream);border-radius:50%;border:2px solid var(--mint);transform:translateX(-50%);box-shadow:0 0 8px rgba(62,207,110,0.5);"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:6px;">
+                  <span style="font-size:10px;color:rgba(240,237,230,0.3);">Lower quartile</span>
+                  <span style="font-size:10px;color:var(--mint);font-weight:600;">← You are here</span>
+                  <span style="font-size:10px;color:rgba(240,237,230,0.3);">Upper quartile</span>
+                </div>
+              </div>
+              <!-- Breakdown rows -->
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.02);border-radius:7px;">
+                  <span style="font-size:12px;color:rgba(240,237,230,0.6);">🟢 Independent practices</span>
+                  <span style="font-size:12px;font-weight:700;color:var(--cream);">£40k – £50k</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.02);border-radius:7px;">
+                  <span style="font-size:12px;color:rgba(240,237,230,0.6);">🏢 Corporate groups</span>
+                  <span style="font-size:12px;font-weight:700;color:var(--cream);">£36k – £44k</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.02);border-radius:7px;">
+                  <span style="font-size:12px;color:rgba(240,237,230,0.6);">📍 UK average (same profile)</span>
+                  <span style="font-size:12px;font-weight:700;color:var(--cream);">£37k – £46k</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /aud-panel-vet -->
+
+<!-- ── PRACTICE AUDIENCE PANEL ── -->
+<div id="aud-panel-practice" class="aud-panel" style="display:none;">
+
+  <!-- PRACTICE: MAP WITH GOLD STAR -->
+  <section style="padding:0 24px 80px;border-bottom:1px solid var(--border);">
+    <div class="container">
+      <div class="reveal" style="text-align:center;margin-bottom:56px;">
+        <p class="section-label" style="display:block;text-align:center;">The map</p>
+        <h2 class="display section-headline">Your practice is already on vetsi. Stand out when you're hiring.</h2>
+        <p class="section-sub" style="max-width:520px;margin:0 auto;">Every UK vet practice is pre-loaded. Claim your profile and when you're ready to hire, switch on your gold star — and every vet browsing your area sees you first.</p>
+      </div>
+      <div class="showcase-grid reveal" style="gap:48px;align-items:center;direction:rtl;">
+        <div style="direction:ltr;">
+          <div class="showcase-label">⭐ Hiring highlight</div>
+          <h3 class="showcase-title">When you're hiring, vets in your area see you first</h3>
+          <p class="showcase-body">Practices that toggle on their hiring status get a gold star marker on every candidate's map. They can filter to show only hiring practices — which means you appear at the top and stay visible. Toggle it on and off instantly from your dashboard, at no extra cost.</p>
+          <ul class="showcase-points">
+            <li>Gold star pin sets you apart from every other practice in the area</li>
+            <li>Show up at the top when vets filter for "Hiring now"</li>
+            <li>Toggle hiring status on or off any time, instantly</li>
+            <li>Included in all subscriptions — no extra ad spend</li>
+          </ul>
+        </div>
+        <div style="direction:ltr;">
+          <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(62,207,110,0.25);box-shadow:0 24px 60px rgba(0,0,0,0.4);">
+            <div style="background:#0d2b1f;padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(62,207,110,0.15);">
+              <div style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#3ecf6e;"></div>
+              <div style="font-size:12px;color:rgba(240,237,230,0.4);margin-left:6px;">Explore Map — York</div>
+            </div>
+            <div id="landing-map" style="height:300px;width:100%;"></div>
+          </div>
+          <div class="mock-caption">⭐ Gold star = actively hiring · Grey pin = not currently hiring</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRACTICE: MESSAGING -->
+  <section style="padding:80px 24px;border-bottom:1px solid var(--border);">
+    <div class="container">
+      <div class="showcase-grid reveal" style="gap:48px;align-items:center;">
+        <div>
+          <div class="showcase-label">💬 Direct messaging</div>
+          <h3 class="showcase-title">Talk directly to candidates — no agency in the middle</h3>
+          <p class="showcase-body">When a vet reaches out or you receive an anonymous enquiry, you can reply directly in vetsi. No recruiter taking a cut of the conversation, no delayed callbacks. The whole dialogue is yours — from first hello to job offer.</p>
+          <ul class="showcase-points">
+            <li>Instant notifications when a vet messages or expresses interest</li>
+            <li>Full conversation history in one place for every candidate</li>
+            <li>Anonymous enquirers graduate to named profiles when they're ready</li>
+            <li>No commission on any conversation — or any hire</li>
+          </ul>
+        </div>
+        <div>
+          <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(62,207,110,0.25);box-shadow:0 24px 60px rgba(0,0,0,0.4);background:#0d2b1f;">
+            <div style="padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(62,207,110,0.15);">
+              <div style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div>
+              <div style="width:10px;height:10px;border-radius:50%;background:#3ecf6e;"></div>
+              <div style="font-size:12px;color:rgba(240,237,230,0.4);margin-left:6px;">Candidate Messages</div>
+            </div>
+            <div style="display:flex;height:260px;">
+              <div style="width:190px;border-right:1px solid rgba(62,207,110,0.1);overflow-y:auto;">
+                <div style="padding:10px 12px;background:rgba(62,207,110,0.07);border-left:2px solid #3ecf6e;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                    <div style="width:22px;height:22px;border-radius:6px;background:#0d9488;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;">SJ</div>
+                    <span style="font-size:11px;font-weight:700;color:#f0ede6;">Sarah Johnson</span>
+                  </div>
+                  <div style="font-size:10px;color:rgba(240,237,230,0.4);padding-left:30px;">Happy to arrange a call</div>
+                </div>
+                <div style="padding:10px 12px;border-bottom:1px solid rgba(62,207,110,0.06);">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                    <div style="width:22px;height:22px;border-radius:6px;background:#7c3aed;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;">??</div>
+                    <span style="font-size:11px;font-weight:700;color:#f0ede6;">Anonymous Vet</span>
+                  </div>
+                  <div style="font-size:10px;color:rgba(240,237,230,0.4);padding-left:30px;">Equine · 4 yrs · Enquiry</div>
+                </div>
+                <div style="padding:10px 12px;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                    <div style="width:22px;height:22px;border-radius:6px;background:#e11d48;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;">JW</div>
+                    <span style="font-size:11px;font-weight:700;color:#f0ede6;">James Williams</span>
+                  </div>
+                  <div style="font-size:10px;color:rgba(240,237,230,0.4);padding-left:30px;">When would suit for a call?</div>
+                </div>
+              </div>
+              <div style="flex:1;padding:14px;display:flex;flex-direction:column;gap:10px;">
+                <div style="background:#163d2c;border-radius:0 8px 8px 8px;padding:8px 12px;font-size:11px;color:rgba(240,237,230,0.75);line-height:1.55;max-width:90%;">Hi Sarah — great to hear from you. I've had a look at your profile, really impressive background.</div>
+                <div style="background:rgba(62,207,110,0.1);border-radius:8px 0 8px 8px;padding:8px 12px;font-size:11px;color:rgba(240,237,230,0.75);line-height:1.55;max-width:90%;align-self:flex-end;">Thanks so much! I'm free Thursday afternoon or Friday morning if that works.</div>
+                <div style="background:#163d2c;border-radius:0 8px 8px 8px;padding:8px 12px;font-size:11px;color:rgba(240,237,230,0.75);line-height:1.55;max-width:90%;">Thursday at 2pm is perfect. I'll send a calendar invite now.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRACTICE: AI ADVERT -->
+  <section style="padding:80px 24px;border-bottom:1px solid var(--border);">
+    <div class="container">
+      <div class="showcase-grid reveal" style="gap:48px;align-items:center;direction:rtl;">
+        <div style="direction:ltr;">
+          <div class="showcase-label">✨ AI Job Advert Generator</div>
+          <h3 class="showcase-title">A job advert that sounds like you — written in 15 seconds</h3>
+          <p class="showcase-body">Answer a few questions about your practice and your ideal candidate. vetsi's AI writes a full, publish-ready job advert that captures your culture, your team, and your salary — not a generic template. Edit anything you like, then publish it directly to your vetsi profile.</p>
+          <ul class="showcase-points">
+            <li>Pulls from your practice profile automatically — no retyping</li>
+            <li>Tone options: clinical and professional, or warm and personal</li>
+            <li>Highlights your standout qualities — equipment, OOH setup, CPD budget</li>
+            <li>Publish directly to your practice card on the vetsi map</li>
+          </ul>
+        </div>
+        <div style="direction:ltr;">
+          <div class="ai-badge">
+            <div class="ai-badge-icon">✨</div>
+            <div class="ai-badge-text">AI-generated in 15 seconds from your practice profile</div>
+          </div>
+          <div class="advert-mock">
+            <div class="advert-mock-bar">
+              <div class="advert-mock-dot" style="background:#ef4444"></div>
+              <div class="advert-mock-dot" style="background:#f59e0b"></div>
+              <div class="advert-mock-dot" style="background:#3ecf6e"></div>
+              <div class="advert-mock-title">AI Job Advert Generator</div>
+            </div>
+            <div class="advert-mock-body">
+              <div class="advert-mock-tag">✨ AI-Generated · Ready to publish</div>
+              <div class="advert-mock-head">Small Animal Vet Surgeon — Millbrook Vets, Harrogate</div>
+              <div class="advert-mock-line w100"></div>
+              <div class="advert-mock-line w88"></div>
+              <div class="advert-mock-line accent"></div>
+              <div class="advert-mock-line w75"></div>
+              <div class="advert-mock-divider"></div>
+              <div style="font-size:10px;color:var(--mint);font-weight:700;margin-bottom:8px;letter-spacing:0.5px;">WHY JOIN US?</div>
+              <div class="advert-mock-bullets">
+                <div class="advert-mock-bullet"><div class="advert-mock-bullet-line w88" style="width:88%"></div></div>
+                <div class="advert-mock-bullet"><div class="advert-mock-bullet-line" style="width:75%"></div></div>
+                <div class="advert-mock-bullet"><div class="advert-mock-bullet-line" style="width:82%"></div></div>
+              </div>
+              <div class="advert-mock-divider"></div>
+              <div style="font-size:10px;color:var(--mint);font-weight:700;margin-bottom:8px;letter-spacing:0.5px;">THE PACKAGE</div>
+              <div class="advert-mock-line w60"></div>
+              <div class="advert-mock-line w45"></div>
+              <div style="margin-top:14px;display:flex;gap:8px;align-items:center;">
+                <div class="advert-mock-btn">🚀 Publish to vetsi</div>
+                <div style="font-size:11px;color:rgba(240,237,230,0.3);">↺ Regenerate</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRACTICE: CANDIDATE PIPELINE -->
+  <section style="padding:80px 24px;border-bottom:1px solid var(--border);">
+    <div class="container">
+      <div class="showcase-grid reveal" style="gap:48px;align-items:center;">
+        <div>
+          <div class="showcase-label">📋 Candidate pipeline</div>
+          <h3 class="showcase-title">Your hiring pipeline — no spreadsheets needed</h3>
+          <p class="showcase-body">Every vet who reaches out lands in your pipeline automatically. Move them from New to Shortlisted to Interview with a single click. Anonymous enquiries live in their own tab so your pipeline stays clean. When a candidate is ready to share their full profile, it's right there waiting for you.</p>
+          <ul class="showcase-points">
+            <li>Pipeline stages: New, Shortlisted, Interview — move in one click</li>
+            <li>Anonymous enquiries managed separately, never lost</li>
+            <li>Instant notification the moment a vet expresses interest</li>
+            <li>All conversations and candidate details in one dashboard</li>
+          </ul>
+          <div style="margin-top:28px;">
+            <a href="login.html?role=hospital" class="btn-hero-ghost" style="font-size:13px;padding:10px 22px;">Claim your practice profile →</a>
+          </div>
+        </div>
+        <div class="mockup-wrap">
+          <div class="screen-device">
+            <div class="screen-bar">
+              <div class="screen-dot" style="background:#ef4444"></div>
+              <div class="screen-dot" style="background:#f59e0b"></div>
+              <div class="screen-dot" style="background:#22c55e"></div>
+            </div>
+            <div class="mock-hosp">
+              <div class="mock-kpis">
+                <div class="mock-kpi">
+                  <div class="mock-kpi-val">8</div>
+                  <div class="mock-kpi-label">Total candidates</div>
+                </div>
+                <div class="mock-kpi">
+                  <div class="mock-kpi-val">3</div>
+                  <div class="mock-kpi-label">Shortlisted</div>
+                </div>
+                <div class="mock-kpi">
+                  <div class="mock-kpi-val">2</div>
+                  <div class="mock-kpi-label">Interviewing</div>
+                </div>
+              </div>
+              <div class="mock-pipeline">
+                <div class="mock-pipe-tabs">
+                  <div class="mock-pipe-tab on">📥 All</div>
+                  <div class="mock-pipe-tab">💬 Enquiries</div>
+                  <div class="mock-pipe-tab">🆕 New</div>
+                  <div class="mock-pipe-tab">⭐ Shortlisted</div>
+                </div>
+                <div class="mock-cand">
+                  <div class="mock-cand-av" style="background:#0d9488">SJ</div>
+                  <div class="mock-cand-info">
+                    <div class="mock-cand-name">Sarah Johnson</div>
+                    <div class="mock-cand-spec">Small Animal GP · 6 years</div>
+                  </div>
+                  <div class="mock-cand-tag" style="background:rgba(62,207,110,0.15);color:#3ecf6e;">⭐ Shortlisted</div>
+                </div>
+                <div class="mock-cand">
+                  <div class="mock-cand-av" style="background:#7c3aed">??</div>
+                  <div class="mock-cand-info">
+                    <div class="mock-cand-name">Anonymous Vet</div>
+                    <div class="mock-cand-spec">Equine · 4 years</div>
+                  </div>
+                  <div class="mock-cand-tag" style="background:rgba(245,158,11,0.15);color:#f59e0b;">📅 Interview</div>
+                </div>
+                <div class="mock-cand">
+                  <div class="mock-cand-av" style="background:#e11d48">JW</div>
+                  <div class="mock-cand-info">
+                    <div class="mock-cand-name">James Williams</div>
+                    <div class="mock-cand-spec">Mixed · 2 years</div>
+                  </div>
+                  <div class="mock-cand-tag" style="background:rgba(139,92,246,0.15);color:#c4b5fd;">💬 Enquiry</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRACTICE: VETSI INSIGHTS -->
+  <section style="padding:80px 24px;border-bottom:1px solid var(--border);">
+    <div class="container">
+      <div class="reveal" style="text-align:center;margin-bottom:56px;">
+        <p class="section-label" style="display:block;text-align:center;">vetsi insights</p>
+        <h2 class="display section-headline">Data-backed guidance to help you hire — and keep — great vets.</h2>
+        <p class="section-sub" style="max-width:540px;margin:0 auto;">vetsi draws on platform data to give you practical, timely guidance on salary, onboarding and retention. Not generic HR advice — insights built from what UK vets are actually saying and doing.</p>
+      </div>
+      <div class="reveal" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:40px;">
+        <div style="background:rgba(62,207,110,0.05);border:1px solid var(--border);border-radius:14px;padding:22px;">
+          <div style="font-size:22px;margin-bottom:10px;">💷</div>
+          <div style="font-size:14px;font-weight:700;color:var(--cream);margin-bottom:6px;">Salary recommendations</div>
+          <div style="font-size:12px;color:var(--cream-dim);line-height:1.65;">See what vets with your practice's species mix and location are actually expecting. Know what salary range will attract serious candidates before you post.</div>
+        </div>
+        <div style="background:rgba(62,207,110,0.05);border:1px solid var(--border);border-radius:14px;padding:22px;">
+          <div style="font-size:22px;margin-bottom:10px;">🤝</div>
+          <div style="font-size:14px;font-weight:700;color:var(--cream);margin-bottom:6px;">Onboarding tips</div>
+          <div style="font-size:12px;color:var(--cream-dim);line-height:1.65;">The first 90 days matter most. vetsi surfaces the onboarding practices that correlate with vets staying long-term — from induction structure to CPD commitments.</div>
+        </div>
+        <div style="background:rgba(62,207,110,0.05);border:1px solid var(--border);border-radius:14px;padding:22px;">
+          <div style="font-size:22px;margin-bottom:10px;">📈</div>
+          <div style="font-size:14px;font-weight:700;color:var(--cream);margin-bottom:6px;">Retention guidance</div>
+          <div style="font-size:12px;color:var(--cream-dim);line-height:1.65;">Understand what makes vets stay — and what makes them quietly start browsing. OOH structure, rota flexibility, CPD budget and team culture all play a role.</div>
+        </div>
+      </div>
+      <!-- Insight card mock -->
+      <div class="reveal" style="max-width:680px;margin:0 auto;">
+        <div style="background:var(--forest-mid);border:1px solid rgba(62,207,110,0.2);border-radius:16px;overflow:hidden;">
+          <div style="padding:14px 20px;border-bottom:1px solid rgba(62,207,110,0.12);display:flex;align-items:center;gap:10px;">
+            <div style="width:28px;height:28px;border-radius:8px;background:rgba(62,207,110,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;">💡</div>
+            <div style="font-size:13px;font-weight:700;color:var(--cream);">vetsi Insight — this week</div>
+            <div style="margin-left:auto;font-size:11px;color:rgba(240,237,230,0.3);">Small Animal · Yorkshire</div>
+          </div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:rgba(62,207,110,0.05);border:1px solid rgba(62,207,110,0.12);border-radius:10px;">
+              <div style="font-size:20px;flex-shrink:0;">💷</div>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:var(--mint);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Salary</div>
+                <div style="font-size:13px;color:var(--cream-dim);line-height:1.6;">Vets with 3–6 years experience in small animal practices in your area are currently expecting <span style="color:var(--cream);font-weight:600;">£40k–£48k</span>. Practices offering below £38k are seeing significantly fewer enquiries in the past 30 days.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:rgba(245,158,11,0.04);border:1px solid rgba(245,158,11,0.12);border-radius:10px;">
+              <div style="font-size:20px;flex-shrink:0;">🤝</div>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#f59e0b;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Retention tip</div>
+                <div style="font-size:13px;color:var(--cream-dim);line-height:1.6;">Vets most commonly cite <span style="color:var(--cream);font-weight:600;">OOH frequency and rota predictability</span> as the top reasons for leaving. Practices that publish their rota structure on their vetsi profile receive 2x more enquiries.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:rgba(139,92,246,0.05);border:1px solid rgba(139,92,246,0.12);border-radius:10px;">
+              <div style="font-size:20px;flex-shrink:0;">🎓</div>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#c4b5fd;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Onboarding</div>
+                <div style="font-size:13px;color:var(--cream-dim);line-height:1.6;">Practices that offer a <span style="color:var(--cream);font-weight:600;">structured 3-month induction</span> with a named clinical mentor report significantly higher 12-month retention rates among newly hired vets.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRACTICE: VET SPACE + NEWS ACCESS -->
+  <section style="padding:80px 24px 80px;">
+    <div class="container">
+      <div class="reveal" style="text-align:center;margin-bottom:40px;">
+        <p class="section-label" style="display:block;text-align:center;">The community layer</p>
+        <h2 class="display section-headline">It's not just hiring. It's the whole profession.</h2>
+        <p class="section-sub" style="max-width:520px;margin:0 auto;">Your subscription includes access to Vet Space and the news feed — so you're not just a recruiter on this platform, you're part of the community vets actually use.</p>
+      </div>
+      <div class="reveal" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:760px;margin:0 auto;">
+        <div style="background:rgba(62,207,110,0.05);border:1px solid var(--border);border-radius:14px;padding:24px;">
+          <div style="font-size:24px;margin-bottom:12px;">🐾</div>
+          <div style="font-size:15px;font-weight:700;color:var(--cream);margin-bottom:8px;">Vet Space access</div>
+          <div style="font-size:13px;color:var(--cream-dim);line-height:1.65;">Read the conversations vets are actually having about salary, careers, and working conditions. Understand what the profession is thinking — without a survey.</div>
+        </div>
+        <div style="background:rgba(62,207,110,0.05);border:1px solid var(--border);border-radius:14px;padding:24px;">
+          <div style="font-size:24px;margin-bottom:12px;">📰</div>
+          <div style="font-size:15px;font-weight:700;color:var(--cream);margin-bottom:8px;">News &amp; CPD feed</div>
+          <div style="font-size:13px;color:var(--cream-dim);line-height:1.65;">Stay on top of RCVS guidance, BVA news and CPD trends. Know what's shaping the profession — and what vets are talking about before they walk through your door.</div>
+        </div>
+      </div>
+      <div class="reveal" style="text-align:center;margin-top:36px;">
+        <a href="login.html?role=hospital" class="btn-hero-ghost" style="font-size:13px;padding:10px 22px;">Claim your early adopter rate →</a>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /aud-panel-practice -->
+
+<!-- Leaflet map init — only for practice panel map -->
+<script>
+(function() {
+  var mapInitialised = false;
+  function initLandingMap() {
+    if (mapInitialised) { return; }
+    var el = document.getElementById('landing-map');
+    if (!el) { return; }
+    mapInitialised = true;
+    var map = L.map('landing-map', {
+      center: [53.958, -1.082],
+      zoom: 13,
+      zoomControl: false,
+      scrollWheelZoom: false,
+      dragging: false,
+      attributionControl: false
+    });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '',
+      maxZoom: 19
+    }).addTo(map);
+    function hiringIcon() {
+      return L.divIcon({
+        className: '',
+        html: '<div style="background:linear-gradient(135deg,#f59e0b,#d97706);width:32px;height:32px;border-radius:50%;border:3px solid #fbbf24;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 0 18px rgba(245,158,11,0.7),0 2px 8px rgba(0,0,0,0.4);">⭐</div>',
+        iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -20]
+      });
+    }
+    function plainIcon() {
+      return L.divIcon({
+        className: '',
+        html: '<div style="background:#1a3d2b;width:24px;height:24px;border-radius:50%;border:2px solid rgba(62,207,110,0.3);display:flex;align-items:center;justify-content:center;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">🏥</div>',
+        iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -16]
+      });
+    }
+    var practices = [
+      { lat: 53.962, lng: -1.074, name: 'Millbrook Vets', sub: 'Small Animal · Independent · Hiring now', hiring: true },
+      { lat: 53.954, lng: -1.091, name: 'Riverside Animal Hospital', sub: 'Mixed practice · PetCare Partners', hiring: false },
+      { lat: 53.967, lng: -1.065, name: 'Northgate Animal Hospital', sub: 'Small Animal · Companion Vets Group', hiring: false },
+      { lat: 53.948, lng: -1.078, name: 'Foxhollow Vets', sub: 'Small Animal · Independent', hiring: false },
+      { lat: 53.958, lng: -1.100, name: 'Heathfield Vets', sub: 'Farm & Equine · Independent', hiring: false },
+      { lat: 53.970, lng: -1.088, name: 'Birchwood Vets', sub: 'Small Animal · HeartlandVets Group', hiring: false }
+    ];
+    practices.forEach(function(p) {
+      var marker = L.marker([p.lat, p.lng], { icon: p.hiring ? hiringIcon() : plainIcon() }).addTo(map);
+      marker.bindPopup(
+        '<div style="font-family:DM Sans,sans-serif;min-width:160px;">' +
+        '<div style="font-weight:700;font-size:13px;color:#0d2b1f;margin-bottom:3px;">' +
+        (p.hiring ? '⭐ ' : '') + p.name + '</div>' +
+        '<div style="font-size:11px;color:#6b8878;">' + p.sub + '</div>' +
+        (p.hiring ? '<div style="margin-top:6px;background:#3ecf6e;color:#0d2b1f;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;display:inline-block;">HIRING NOW</div>' : '') +
+        '</div>'
+      );
+      if (p.hiring) {
+        setTimeout(function() { marker.openPopup(); }, 800);
+      }
+    });
+  }
+  // Initialise when practice panel is shown, or on window load if already visible
+  window.__initLandingMap = initLandingMap;
+  window.addEventListener('load', function() {
+    var panel = document.getElementById('aud-panel-practice');
+    if (panel && panel.style.display !== 'none') {
+      initLandingMap();
+    }
+  });
+})();
+</script>
+
+<!-- ── AUDIENCE SELECTOR CSS (appended inline) ── -->
+<style>
+/* Audience toggle buttons */
+.aud-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 40px;
+  border-radius: 16px;
+  border: 2px solid var(--border);
+  background: rgba(62,207,110,0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+  text-align: center;
+  color: var(--cream);
+  position: relative;
+}
+.aud-btn:hover {
+  border-color: rgba(62,207,110,0.45);
+  background: rgba(62,207,110,0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+}
+.aud-btn-active {
+  border-color: var(--mint);
+  background: rgba(62,207,110,0.1);
+  box-shadow: 0 0 0 4px rgba(62,207,110,0.08), 0 12px 32px rgba(0,0,0,0.25);
+}
+.aud-btn-active::after {
+  content: '✓';
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 11px;
+  color: var(--mint);
+  font-weight: 700;
+}
+.aud-btn-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+.aud-btn-label {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--cream);
+  letter-spacing: -0.5px;
+}
+.aud-btn-sub {
+  font-size: 12px;
+  color: var(--cream-dim);
+  font-weight: 400;
+}
+/* Panel transitions */
+.aud-panel {
+  animation: panelFadeIn 0.3s ease;
+}
+@keyframes panelFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* Switcher label in sticky nav area — not needed but good to have */
+@media (max-width: 600px) {
+  .aud-btn { min-width: 140px; padding: 18px 20px; }
+  .aud-btn-label { font-size: 16px; }
+  .aud-btn-icon { font-size: 26px; }
+}
+</style>
+
+<!-- ── VET FREE CTA (shown when vet panel active) ── -->
+<section id="section-vet-cta" style="background:var(--forest-mid); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="reveal" style="text-align:center; max-width:580px; margin:0 auto;">
+      <p class="section-label">Ready to explore?</p>
+      <h2 class="display" style="font-size:clamp(32px, 5vw, 52px); margin-bottom:16px;">Create your free account — takes two minutes.</h2>
+      <p style="font-size:17px; color:var(--cream-dim); line-height:1.65; margin-bottom:40px;">vetsi is completely free for vets, forever. No subscription, no placement fee, no catch.</p>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:40px;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--cream-dim);"><span style="color:var(--mint);font-weight:700;">✓</span> All 5,331 UK practices on the map</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--cream-dim);"><span style="color:var(--mint);font-weight:700;">✓</span> 100% anonymous browsing</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--cream-dim);"><span style="color:var(--mint);font-weight:700;">✓</span> Direct messaging with practices</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--cream-dim);"><span style="color:var(--mint);font-weight:700;">✓</span> Vet Space community</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--cream-dim);"><span style="color:var(--mint);font-weight:700;">✓</span> Salary benchmarking</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--cream-dim);"><span style="color:var(--mint);font-weight:700;">✓</span> News &amp; CPD feed</div>
+      </div>
+      <a href="login.html?role=vet" class="btn-hero" style="font-size:16px; padding:16px 36px;">Create free account →</a>
+      <p style="font-size:13px; color:var(--muted); margin-top:20px;">Free forever · No card required · No agency involvement</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING (shown when practice panel active) ── -->
+<section id="pricing" style="display:none; background:var(--forest-mid); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="reveal" style="text-align:center; max-width:600px; margin:0 auto 56px;">
+      <p class="section-label">Pricing</p>
+      <h2 class="display" style="font-size:clamp(36px, 5vw, 56px); margin-bottom:16px;">Simple, honest pricing</h2>
+      <p style="font-size:17px; color:var(--cream-dim); line-height:1.65;">No placement fees. No contracts. No surprises.</p>
+    </div>
+    <div class="reveal" style="max-width:480px; margin:0 auto;">
+      <div class="price-card featured">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap;">
+          <div class="price-badge" style="margin-bottom:0;">For practices</div>
+          <div style="background:var(--forest-mid);color:#fbbf24;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 12px;border-radius:100px;border:1px solid rgba(251,191,36,0.3);">⚡ Early adopter offer</div>
+        </div>
+        <div class="price-title">Practice Subscription</div>
+        <div style="margin:12px 0;display:flex;align-items:baseline;gap:10px;">
+          <span style="font-family:'Fraunces',serif;font-size:28px;font-weight:900;color:rgba(13,43,31,0.45);text-decoration:line-through;letter-spacing:-1px;">£99</span>
+          <span class="price-amount">£49</span>
+          <span class="price-period">/month</span>
+        </div>
+        <div style="background:rgba(13,43,31,0.15);border-radius:8px;padding:8px 12px;font-size:12px;color:rgba(13,43,31,0.7);margin-bottom:16px;line-height:1.5;">
+          🔒 Early adopter rate locked in for life. Price rises to £99/month once we open to all practices — sign up now to keep £49 forever.
+        </div>
+        <div class="price-desc">Unlimited inbound candidate leads. Claim your practice profile free — subscribe when you're ready to start the conversation.</div>
+        <ul class="price-items">
+          <li class="price-item">Unlimited candidate inbound leads</li>
+          <li class="price-item">Full candidate pipeline management</li>
+          <li class="price-item">Direct messaging with candidates</li>
+          <li class="price-item">Instant interest notifications</li>
+          <li class="price-item">AI-powered job advert writer</li>
+          <li class="price-item">Practice profile &amp; culture page</li>
+          <li class="price-item">Zero placement fees — ever</li>
+        </ul>
+        <a href="login.html?role=hospital" class="price-btn price-btn-dark">Claim your early adopter rate →</a>
+      </div>
+    </div>
+    <p class="reveal" style="text-align:center; font-size:13px; color:var(--muted); margin-top:28px;">No contract · Cancel any time · Free to claim your practice profile · Early adopter rate locked in for life</p>
+  </div>
+</section>
+
+<!-- ── FINAL CTA ── -->
+<section class="final-cta">
+  <div class="container">
+    <div class="reveal">
+      <h2 class="display">Veterinary hiring,<br><span style="color:var(--mint); font-style:italic;">done right.</span></h2>
+      <p>Join vetsi — free for vets, straightforward for practices, and built specifically for the UK profession.</p>
+      <div class="final-cta-actions">
+        <a href="login.html?role=vet" class="btn-hero">Join as a vet — free →</a>
+        <a href="login.html?role=hospital" class="btn-hero-ghost">Claim £49/mo early adopter rate</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo">vet<span>si</span></div>
+  <div class="footer-tagline">built for the UK veterinary profession</div>
+  <div class="footer-links">
+    <a href="#how-it-works">How it works</a>
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="login.html">Sign in</a>
+    <a href="#">hello@vetsi.co.uk</a>
+  </div>
+</footer>
+
+<script>
+// ── AUDIENCE SWITCHING ──
+function switchAudience(aud) {
+  ['vet', 'practice'].forEach(function(a) {
+    var panel = document.getElementById('aud-panel-' + a);
+    var btn = document.getElementById('aud-btn-' + a);
+    if (a === aud) {
+      panel.style.display = 'block';
+      btn.classList.add('aud-btn-active');
+    } else {
+      panel.style.display = 'none';
+      btn.classList.remove('aud-btn-active');
+    }
+  });
+  // Show the right bottom section
+  var vetCta = document.getElementById('section-vet-cta');
+  var pricing = document.getElementById('pricing');
+  if (aud === 'vet') {
+    vetCta.style.display = 'block';
+    pricing.style.display = 'none';
+  } else {
+    vetCta.style.display = 'none';
+    pricing.style.display = 'block';
+  }
+  // Initialise Leaflet map when practice panel first becomes visible
+  if (aud === 'practice' && typeof window.__initLandingMap === 'function') {
+    setTimeout(window.__initLandingMap, 50);
+  }
+}
+
+// ── SCROLL REVEAL ──
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -48px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── NAV SCROLL ──
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('navbar');
+  if (window.scrollY > 40) {
+    nav.style.background = 'rgba(6,21,16,0.95)';
+  } else {
+    nav.style.background = 'rgba(6,21,16,0.8)';
+  }
+});
+</script>
+</body>
+</html>
