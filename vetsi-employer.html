@@ -3880,7 +3880,7 @@ async function handleSignUp() {
   }
 
   setAuthLoading('signup', true);
-  const { data, error } = await sb.auth.signUp({ email, password });
+  const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: 'https://vetsi.co.uk/vetsi-employer.html' } });
   setAuthLoading('signup', false);
   if (error) { showAuthError('signup', error.message); return; }
 
