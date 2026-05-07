@@ -1113,9 +1113,13 @@ async function generateArticle() {
   document.getElementById('art-status').style.display = 'none';
 
   try {
+    const { data: { session: aiSession } } = await sb.auth.getSession();
     const res = await fetch('https://lnruacfecwuvrlmyrwlr.supabase.co/functions/v1/send-notification', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer placeholder' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${aiSession?.access_token || ''}`
+      },
       body: JSON.stringify({
         type: 'generate_snippet',
         articleText: body,
