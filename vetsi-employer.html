@@ -4596,29 +4596,19 @@ async function empLoadVsPosts() {
     return;
   }
 
-  const authorIds = [...new Set(posts.map(p => p.author_id))];
-  const { data: identities } = await sb.from('vet_identities')
-    .select('user_id, username, colour').in('user_id', authorIds);
-  const identityMap = {};
-  (identities||[]).forEach(i => { identityMap[i.user_id] = i; });
-
   const postIds = posts.map(p => p.id);
   let repliesByPost = {};
   if (postIds.length > 0) {
     const { data: replies } = await sb.from('vet_replies')
-      .select('id, post_id, author_id, body, likes, removed, parent_reply_id, created_at')
+      .select('id, post_id, author_id, author_username, author_colour, body, likes, removed, parent_reply_id, created_at')
       .in('post_id', postIds).eq('removed', false)
       .order('created_at', { ascending: true });
 
-    const replyAuthorIds = [...new Set((replies||[]).map(r => r.author_id))];
-    let replyIdentityMap = {};
-    if (replyAuthorIds.length > 0) {
-      const { data: rIdents } = await sb.from('vet_identities')
-        .select('user_id, username, colour').in('user_id', replyAuthorIds);
-      (rIdents||[]).forEach(i => { replyIdentityMap[i.user_id] = i; });
-    }
     (replies||[]).forEach(r => {
-      r._identity = replyIdentityMap[r.author_id] || { username:'VetsiVet????', colour:'#3ecf6e' };
+      r._identity = {
+        username: r.author_username || 'VetsiVet????',
+        colour: r.author_colour || '#3ecf6e'
+      };
       if (!repliesByPost[r.post_id]) repliesByPost[r.post_id] = [];
       repliesByPost[r.post_id].push(r);
     });
@@ -4626,7 +4616,10 @@ async function empLoadVsPosts() {
 
   empVsPosts = posts.map(p => ({
     ...p,
-    _identity: identityMap[p.author_id] || { username:'VetsiVet????', colour:'#3ecf6e' },
+    _identity: {
+      username: p.author_username || 'VetsiVet????',
+      colour: p.author_colour || '#3ecf6e'
+    },
     _replies: repliesByPost[p.id] || []
   }));
   empRenderVsPosts();
@@ -4739,10 +4732,14 @@ async function empSubmitPost() {
   const body = document.getElementById('emp-vs-post-body').value.trim();
   const category = document.getElementById('emp-vs-cat-select').value;
   if (!title) { toast('⚠️ Please enter a title'); return; }
+  const identity = await empGetOrCreateIdentity();
   const btn = document.getElementById('emp-vs-submit-btn');
   btn.disabled = true; btn.textContent = 'Posting…';
   const { error } = await sb.from('vet_posts').insert({
-    author_id: currentUser.id, category, title, body: body||null, likes: 0
+    author_id: currentUser.id,
+    author_username: identity.username,
+    author_colour: identity.colour,
+    category, title, body: body||null, likes: 0
   });
   btn.disabled = false; btn.textContent = 'Post anonymously';
   if (error) { toast('⚠️ Could not post — ' + error.message); return; }
@@ -4773,7 +4770,15 @@ async function empSubmitReply(postId, parentReplyId) {
   const body = ta?.value.trim();
   if (!body) return;
   ta.disabled = true;
-  const payload = { post_id: postId, author_id: currentUser.id, body, likes: 0 };
+  const identity = await empGetOrCreateIdentity();
+  const payload = {
+    post_id: postId,
+    author_id: currentUser.id,
+    author_username: identity.username,
+    author_colour: identity.colour,
+    body,
+    likes: 0
+  };
   if (parentReplyId) payload.parent_reply_id = parentReplyId;
   const { error } = await sb.from('vet_replies').insert(payload);
   ta.disabled = false;
