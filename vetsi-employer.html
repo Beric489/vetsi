@@ -3396,9 +3396,13 @@ async function updateBillingSection() {
   let cancelAtPeriodEnd = false;
   if (paid && currentHospital.stripe_subscription_id) {
     try {
+      const { data: { session: gsSession } } = await sb.auth.getSession();
       const res = await fetch('https://lnruacfecwuvrlmyrwlr.supabase.co/functions/v1/send-notification', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer placeholder' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${gsSession?.access_token || ''}`
+        },
         body: JSON.stringify({ type: 'get_subscription', subscriptionId: currentHospital.stripe_subscription_id })
       });
       if (res.ok) {
@@ -3509,9 +3513,13 @@ async function executeDeleteAccount() {
   try {
     // 1. Cancel Stripe subscription immediately if active
     if (currentHospital.stripe_subscription_id) {
+      const { data: { session: cancelSession } } = await sb.auth.getSession();
       await fetch('https://lnruacfecwuvrlmyrwlr.supabase.co/functions/v1/send-notification', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer placeholder' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${cancelSession?.access_token || ''}`
+        },
         body: JSON.stringify({ type: 'cancel_subscription', subscriptionId: currentHospital.stripe_subscription_id })
       });
     }
@@ -3533,9 +3541,13 @@ async function executeDeleteAccount() {
 
     // 5. Delete auth user via Edge Function
     const userId = currentUser.id;
+    const { data: { session: delSession } } = await sb.auth.getSession();
     await fetch('https://lnruacfecwuvrlmyrwlr.supabase.co/functions/v1/send-notification', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer placeholder' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${delSession?.access_token || ''}`
+      },
       body: JSON.stringify({ type: 'delete_auth_user', userId })
     });
 
@@ -3563,9 +3575,13 @@ async function confirmCancelSubscription() {
   if (btn) { btn.disabled = true; btn.textContent = 'Cancelling…'; }
 
   try {
+    const { data: { session: cancelSession } } = await sb.auth.getSession();
     const res = await fetch('https://lnruacfecwuvrlmyrwlr.supabase.co/functions/v1/send-notification', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer placeholder' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cancelSession?.access_token || ''}`
+      },
       body: JSON.stringify({ type: 'cancel_subscription', subscriptionId: currentHospital.stripe_subscription_id })
     });
 
