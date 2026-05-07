@@ -6,7 +6,7 @@
 <title>vetsi — the smarter way to hire and be hired in vet med</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,900;1,9..144,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -25,13 +25,6 @@
   --card-bg: rgba(255,255,255,0.04);
   --card-border: rgba(255,255,255,0.08);
   --sidebar-w: 260px;
-  /* Lighter sage tints — mobile section differentiation */
-  --sage-soft: #1f4a36;       /* lifted card background */
-  --sage-pale: #2a5d44;       /* warmer panel accent */
-  --sage-tint: rgba(190,225,205,0.06);  /* subtle wash over forest */
-  --sage-border: rgba(190,225,205,0.14);
-  --sky-cool: rgba(160,205,225,0.08);   /* breath of cool to break green */
-  --sky-cool-border: rgba(160,205,225,0.18);
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; background:var(--forest); color:var(--text-primary); }
@@ -437,8 +430,8 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
 .page-view::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:3px; }
 .page-view.active { display:block; }
 .page-title {
-  font-family:'Fraunces', serif; font-style:italic; font-weight:900; font-size:32px;
-  margin-bottom:6px; letter-spacing:-0.5px;
+  font-family:'Nunito', sans-serif; font-weight:900; font-size:28px;
+  margin-bottom:6px;
 }
 .page-subtitle { font-size:14px; color:var(--text-muted); margin-bottom:28px; }
 
@@ -711,14 +704,6 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
 
 /* ── MESSAGES VIEW ── */
 .messages-layout { display:flex; height:100%; gap:0; }
-/* Mobile-only elements hidden by default on desktop */
-.mob-msg-header { display: none; }
-.mob-chat-header { display: none; }
-.mob-privacy-bar { display: none; }
-.mob-vs-toolbar { display: none; }
-.mob-fab-wrap { display: none; }
-.mob-fab-backdrop { display: none; }
-.sheet-drag-handle { display: none; }
 .messages-list {
   width:280px; border-right:1px solid var(--card-border);
   overflow-y:auto; background:var(--forest-mid);
@@ -921,162 +906,77 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
   .postcode-btn { padding: 6px 14px; font-size: 13px; }
   .distance-badge { font-size: 11px; flex-shrink: 0; }
 
-  /* ── SIDEBAR HIDDEN — replaced by floating FAB on mobile ── */
+  /* ── SIDEBAR → BOTTOM TAB BAR ── */
   .sidebar {
-    display: none !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 64px;
+    min-height: 64px;
+    flex-direction: row;
+    border-right: none;
+    border-top: 1px solid rgba(62,207,110,0.12);
+    order: 2;
+    z-index: 200;
+    overflow: visible;
+    background: rgba(8,22,16,0.98);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .logo, .sidebar-bottom { display: none !important; }
 
-  /* Hide desktop nav items on mobile — FAB is the nav now */
-  .nav { display: none !important; }
+  /* Hide ALL nav items by default on mobile — JS controls visibility */
+  .nav {
+    display: flex;
+    flex-direction: row;
+    padding: 0;
+    flex: 1;
+    overflow: hidden;
+    align-items: stretch;
+  }
+
+  /* Hide desktop nav items on mobile — replaced by JS-built tabs */
   .nav .nav-item { display: none; }
 
-  /* ── FLOATING ACTION BUTTON (FAB) ── */
-  .mob-fab-wrap {
-    display: block;
-    position: fixed;
-    right: 18px;
-    bottom: calc(18px + env(safe-area-inset-bottom));
-    z-index: 400;
-    pointer-events: none; /* children re-enable */
-  }
-  .mob-fab {
-    width: 60px; height: 60px;
-    border-radius: 50%;
-    background: var(--mint);
-    color: var(--forest);
-    border: none;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 2px 6px rgba(62,207,110,0.35);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), background 0.2s;
-    pointer-events: auto;
-    -webkit-tap-highlight-color: transparent;
-    position: relative;
-    z-index: 2;
-  }
-  .mob-fab:active { transform: scale(0.94); }
-  .mob-fab.open { transform: rotate(45deg); background: #f0ede6; }
-  .mob-fab svg { transition: transform 0.25s; }
-
-  .mob-fab-dot {
-    position: absolute;
-    top: 6px; right: 6px;
-    width: 11px; height: 11px;
-    border-radius: 50%;
-    background: #ef4444;
-    border: 2px solid var(--forest);
-    display: none;
-    z-index: 3;
-  }
-  .mob-fab-dot.show { display: block; }
-
-  /* Stack of icons that pop up above the FAB */
-  .mob-fab-stack {
-    position: absolute;
-    bottom: 72px;
-    right: 0;
+  /* Mobile tab items built by JS get this class */
+  .mob-tab {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    gap: 12px;
-    pointer-events: none;
-  }
-  .mob-fab-item {
-    display: flex;
     align-items: center;
-    gap: 10px;
-    opacity: 0;
-    transform: translateY(20px) scale(0.6);
-    transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
-    pointer-events: none;
-  }
-  .mob-fab-stack.open .mob-fab-item {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    pointer-events: auto;
-  }
-  /* Stagger: items reveal in sequence from top down (closer-to-FAB first) */
-  .mob-fab-stack.open .mob-fab-item:nth-child(1) { transition-delay: 0.04s; }
-  .mob-fab-stack.open .mob-fab-item:nth-child(2) { transition-delay: 0.08s; }
-  .mob-fab-stack.open .mob-fab-item:nth-child(3) { transition-delay: 0.12s; }
-  .mob-fab-stack.open .mob-fab-item:nth-child(4) { transition-delay: 0.16s; }
-  .mob-fab-stack.open .mob-fab-item:nth-child(5) { transition-delay: 0.20s; }
-  .mob-fab-stack.open .mob-fab-item:nth-child(6) { transition-delay: 0.24s; }
-  .mob-fab-stack.open .mob-fab-item:nth-child(7) { transition-delay: 0.28s; }
-
-  .mob-fab-label {
-    font-family: 'Fraunces', serif;
-    font-weight: 700;
-    font-style: italic;
-    font-size: 14px;
-    color: var(--text-primary);
-    background: rgba(13,43,31,0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    padding: 6px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--sage-border);
-    white-space: nowrap;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  }
-  .mob-fab-icon {
-    width: 46px; height: 46px;
-    border-radius: 50%;
-    background: rgba(13,43,31,0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--sage-border);
-    color: var(--text-primary);
-    display: flex; align-items: center; justify-content: center;
+    justify-content: center;
+    flex: 1;
+    gap: 5px;
+    padding: 8px 4px 6px;
     cursor: pointer;
-    flex-shrink: 0;
-    transition: background 0.15s, color 0.15s, transform 0.15s;
-    -webkit-tap-highlight-color: transparent;
+    color: rgba(240,237,230,0.38);
+    transition: color 0.18s;
     position: relative;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
   }
-  .mob-fab-item.active .mob-fab-icon {
-    background: var(--mint);
-    color: var(--forest);
-    border-color: var(--mint);
+  .mob-tab.active { color: var(--mint); }
+  .mob-tab svg { flex-shrink: 0; }
+  .mob-tab-label {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0;
   }
-  .mob-fab-item.active .mob-fab-label {
-    color: var(--mint);
-    border-color: var(--mint-border);
-  }
-  .mob-fab-item:active .mob-fab-icon { transform: scale(0.92); }
-  .mob-fab-item-dot {
+  .mob-tab-dot {
     position: absolute;
-    top: 4px; right: 4px;
-    width: 9px; height: 9px;
+    top: 6px;
+    left: 50%;
+    transform: translateX(8px);
+    width: 7px; height: 7px;
     border-radius: 50%;
     background: #ef4444;
-    border: 1.5px solid rgba(13,43,31,0.95);
     display: none;
+    border: 1.5px solid rgba(8,22,16,0.98);
   }
-  .mob-fab-item-dot.show { display: block; }
-
-  /* Backdrop behind FAB stack when open */
-  .mob-fab-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(6,21,16,0.55);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    z-index: 399;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-  }
-  .mob-fab-backdrop.open {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  /* Legacy mob-tab styles kept harmless (sidebar is hidden) */
-  .mob-tab { display: none; }
-  .mob-tab-dot { display: none; }
+  .mob-tab-dot.show { display: block; }
 
   /* More sheet items */
   .more-item {
@@ -1109,73 +1009,37 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
     z-index: 1;
   }
 
-  /* Practice list — draggable bottom sheet with 3 snap points */
+  /* Practice list becomes a bottom sheet */
   .practice-list-panel {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     width: 100%;
-    /* Height set by JS via CSS variable */
-    height: var(--sheet-height, 42%);
-    max-height: 92%;
-    border-radius: 18px 18px 0 0;
-    border-top: 1px solid var(--sage-border);
+    height: 38%;
+    max-height: 38%;
+    border-radius: 16px 16px 0 0;
+    border-top: 1px solid var(--card-border);
     border-left: none;
     border-right: none;
-    background: var(--sage-soft);
-    box-shadow: 0 -10px 36px rgba(0,0,0,0.5);
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
     z-index: 10;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    transition: height 0.32s cubic-bezier(0.32,0.72,0,1);
-    will-change: height;
-  }
-  .practice-list-panel.dragging {
-    transition: none;
-  }
-  /* Pull handle marker — pinned absolutely so it can't be scrolled or flexed away */
-  .practice-list-panel::before {
-    content: '';
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 44px;
-    height: 5px;
-    background: rgba(240,237,230,0.45);
-    border-radius: 3px;
-    z-index: 12;
-    pointer-events: none;
-  }
-  /* Drag handle area for grabbing */
-  .sheet-drag-handle {
-    display: block;
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 32px;
-    cursor: grab;
-    z-index: 11;
-    touch-action: none;
-  }
-  .sheet-drag-handle:active { cursor: grabbing; }
-  /* Inner scrollable content */
-  .practice-list-panel > .panel-header,
-  .practice-list-panel > #practice-list {
     overflow-y: auto;
   }
-  .practice-list-panel > #practice-list {
-    flex: 1;
-    min-height: 0;
-    padding-bottom: 80px; /* room for FAB */
-  }
 
-  .panel-header {
-    padding: 18px 14px 10px;
-    background: var(--sage-soft);
+  /* Pull handle on the sheet */
+  .practice-list-panel::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--card-border);
+    border-radius: 2px;
+    margin: 8px auto 4px;
     flex-shrink: 0;
   }
+
+  .panel-header { padding: 4px 14px 10px; }
   #panel-count { font-size: 13px; }
   .filter-pills { gap: 5px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
   .filter-pills::-webkit-scrollbar { display: none; }
@@ -1188,13 +1052,13 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
   .pc-name { font-size: 13px; }
   .pc-sub { font-size: 11px; }
 
-  /* ── DRAWER → FULL SCREEN (no tab bar to clear) ── */
+  /* ── DRAWER → FULL SCREEN ── */
   .drawer {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    bottom: 0 !important;
+    bottom: 60px !important; /* above tab bar */
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
@@ -1211,193 +1075,52 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
   }
   .drawer-header { padding: 16px 16px 12px; }
   .drawer-name { font-size: 18px; }
-  .drawer-body { padding: 16px 16px 100px; } /* room for FAB */
+  .drawer-body { padding: 16px; }
   .drawer-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .drawer-stat-val { font-size: 15px; }
   .interest-btn { padding: 13px; font-size: 14px; }
 
   /* ── PAGE VIEWS ── */
   .page-view {
-    padding: 16px 16px 100px; /* room for FAB at bottom */
+    padding: 16px 16px 20px;
     height: 100%;
     overflow-y: auto;
   }
-  .page-title { font-size: 26px; }
+  .page-title { font-size: 22px; }
   .page-subtitle { font-size: 13px; margin-bottom: 20px; }
 
-  /* ── MESSAGES — WhatsApp-style two-pane (one visible at a time) ── */
-  #messages-view { padding: 0 !important; }
+  /* ── MESSAGES ── */
   .messages-layout {
     flex-direction: column;
     height: 100%;
-    position: relative;
-    overflow: hidden;
   }
-  /* Conversation list pane */
   .messages-list {
     width: 100%;
-    height: 100%;
-    min-height: 0;
-    max-height: none;
+    height: 200px;
+    min-height: 200px;
+    max-height: 200px;
     border-right: none;
-    border-bottom: none;
+    border-bottom: 1px solid var(--card-border);
     overflow-y: auto;
     flex-shrink: 0;
-    padding-bottom: 100px; /* room for FAB */
-    background: var(--forest);
   }
-  /* Header above the conversation list */
-  .mob-msg-header {
-    display: block;
-    padding: 18px 16px 14px;
-    border-bottom: 1px solid var(--sage-border);
-    background: var(--sage-soft);
-  }
-  .mob-msg-header h2 {
-    font-family: 'Fraunces', serif;
-    font-style: italic;
-    font-weight: 900;
-    font-size: 26px;
-    color: var(--text-primary);
-    margin: 0;
-  }
-  .mob-msg-header p {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 4px;
-  }
-  /* Chat pane slides in over the list */
   .messages-chat {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    flex: none;
-    display: none;
-    flex-direction: column;
-    background: var(--forest);
-    z-index: 20;
-    transform: translateX(100%);
-    transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
-  }
-  .messages-chat.open {
-    display: flex;
-    transform: translateX(0);
-  }
-  /* Mobile chat header with back arrow + privacy info */
-  .mob-chat-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--sage-border);
-    background: var(--sage-soft);
-    flex-shrink: 0;
-  }
-  .mob-chat-back {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    background: rgba(240,237,230,0.06);
-    border: none;
-    color: var(--text-primary);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .mob-chat-back:active { background: rgba(240,237,230,0.12); }
-  .mob-chat-headinfo { flex: 1; min-width: 0; }
-  .mob-chat-headinfo .name {
-    font-family: 'Nunito', sans-serif;
-    font-weight: 800;
-    font-size: 15px;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .mob-chat-headinfo .sub {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 2px;
-  }
-  /* Privacy banner inside chat — sits below header */
-  .mob-privacy-bar {
-    padding: 10px 14px;
-    background: var(--sky-cool);
-    border-bottom: 1px solid var(--sky-cool-border);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-  }
-  .mob-privacy-bar .ico { font-size: 16px; flex-shrink: 0; }
-  .mob-privacy-bar .txt {
     flex: 1;
-    font-size: 11.5px;
-    color: var(--text-secondary);
-    line-height: 1.4;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
-  .mob-privacy-bar .txt strong { color: var(--text-primary); font-weight: 700; }
-  .mob-privacy-bar .upgrade-btn {
-    background: var(--mint);
-    color: var(--forest);
-    border: none;
-    border-radius: 18px;
-    padding: 6px 12px;
-    font-size: 11px;
-    font-weight: 800;
-    font-family: 'Nunito', sans-serif;
-    cursor: pointer;
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-  .mob-privacy-bar .upgrade-btn.locked { opacity: 0.7; cursor: default; }
   .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 14px 12px;
+    padding: 12px;
   }
   .chat-input-row {
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    padding: 10px 12px;
     gap: 8px;
-    background: var(--sage-soft);
-    border-top: 1px solid var(--sage-border);
   }
   .chat-input { font-size: 14px; padding: 9px 12px; }
-  .express-interest-banner { display: none !important; } /* replaced by mob-privacy-bar */
-  .chat-header { display: none !important; } /* replaced by mob-chat-header */
-
-  /* Conversation list rows — give them more breathing room (WhatsApp feel) */
-  .message-thread {
-    padding: 16px 16px;
-    border-bottom: 1px solid var(--sage-border);
-  }
-  .mt-name { font-size: 14px; }
-  .mt-preview { font-size: 13px; }
-
-  /* Empty state for no conversations */
-  .mob-msg-empty {
-    text-align: center;
-    padding: 60px 24px 40px;
-    color: var(--text-secondary);
-  }
-  .mob-msg-empty .ico {
-    font-size: 48px;
-    margin-bottom: 14px;
-    opacity: 0.6;
-  }
-  .mob-msg-empty .title {
-    font-family: 'Fraunces', serif;
-    font-style: italic;
-    font-weight: 700;
-    font-size: 18px;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-  }
-  .mob-msg-empty .body {
-    font-size: 13px;
-    line-height: 1.6;
-    color: var(--text-muted);
-  }
+  .express-interest-banner { margin: 8px 10px; }
 
   /* ── PROFILE GRID ── */
   .profile-grid { grid-template-columns: 1fr; }
@@ -1405,50 +1128,9 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
   /* ── SALARY CALCULATOR ── */
   .salary-grid { grid-template-columns: 1fr !important; }
 
-  /* ── VET SPACE — sleek dropdowns ── */
-  .vs-filters { display: none !important; } /* replaced by dropdowns */
-  .vs-toolbar { display: none !important; } /* replaced by mob version */
-  .mob-vs-toolbar {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .mob-vs-select {
-    flex: 1;
-    background: var(--sage-soft);
-    border: 1px solid var(--sage-border);
-    color: var(--text-primary);
-    border-radius: 12px;
-    padding: 10px 36px 10px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%233ecf6e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .mob-vs-select:focus { border-color: var(--mint); }
-  .mob-vs-newpost {
-    background: var(--mint);
-    color: var(--forest);
-    border: none;
-    border-radius: 12px;
-    width: 44px;
-    height: 44px;
-    font-size: 22px;
-    font-weight: 800;
-    cursor: pointer;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-  }
+  /* ── VET SPACE ── */
+  .vs-toolbar { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .vs-filters { gap: 5px; }
 
   /* ── CAREER SNAPSHOT ── */
   .snapshot-grid { grid-template-columns: 1fr !important; }
@@ -1456,42 +1138,14 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
   /* ── NEWS GRID ── */
   .news-grid { grid-template-columns: 1fr !important; }
 
-  /* ── TOAST — sit above FAB ── */
-  .toast { bottom: 90px; left: 12px; right: 90px; font-size: 13px; }
+  /* ── TOAST ── */
+  .toast { bottom: 72px; left: 12px; right: 12px; font-size: 13px; }
 
   /* ── PRIVACY MODAL ── */
   .interest-panel { border-radius: 10px; }
 
   /* ── CONTENT AREA ── */
   .content { overflow: hidden; flex: 1; }
-
-  /* ── LIGHTER SECTION TINTS — break up the green-on-green ── */
-  /* Lift cards on key pages with a warmer sage */
-  #snapshot-view .snapshot-card,
-  #salary-view .calc-result,
-  .vs-post {
-    background: var(--sage-soft) !important;
-    border-color: var(--sage-border) !important;
-  }
-  /* Profile sections: alternate between forest and sky-cool washes */
-  #profile-view .profile-section:nth-of-type(odd) {
-    background: var(--sage-tint);
-    border: 1px solid var(--sage-border);
-    border-radius: 14px;
-    padding: 14px;
-    margin-bottom: 12px;
-  }
-  #profile-view .profile-section:nth-of-type(even) {
-    background: var(--sky-cool);
-    border: 1px solid var(--sky-cool-border);
-    border-radius: 14px;
-    padding: 14px;
-    margin-bottom: 12px;
-  }
-  /* News cards: lighter background */
-  .news-card { background: var(--sage-soft) !important; border-color: var(--sage-border) !important; }
-  /* Page subtitle area gets a subtle cool wash */
-  .page-title { color: var(--text-primary); }
 
 }
 
@@ -1605,8 +1259,7 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
       <!-- MAP VIEW -->
       <div id="map-view">
         <div id="leaflet-map"></div>
-        <div class="practice-list-panel" id="practice-list-panel">
-          <div class="sheet-drag-handle" id="sheet-drag-handle"></div>
+        <div class="practice-list-panel">
           <div class="panel-header">
             <div class="panel-header-row">
               <h3 id="panel-count">26 practices in York</h3>
@@ -1735,26 +1388,8 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
       <!-- MESSAGES VIEW -->
       <div id="messages-view" class="page-view">
         <div class="messages-layout">
-          <div class="messages-list-wrap" style="display:contents;">
-            <div class="mob-msg-header">
-              <h2>Messages</h2>
-              <p>Conversations with practices on vetsi</p>
-            </div>
-            <div class="messages-list" id="messages-list"></div>
-          </div>
+          <div class="messages-list" id="messages-list"></div>
           <div class="messages-chat" id="chat-panel">
-            <div class="mob-chat-header">
-              <button class="mob-chat-back" onclick="closeChatPane()" aria-label="Back to messages">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="15 18 9 12 15 6"/>
-                </svg>
-              </button>
-              <div class="mob-chat-headinfo">
-                <div class="name" id="mob-chat-name">Practice</div>
-                <div class="sub" id="mob-chat-sub">vetsi · End-to-end private</div>
-              </div>
-            </div>
-            <div class="mob-privacy-bar" id="mob-privacy-bar"></div>
             <div class="chat-header">
               <div class="chat-header-name" id="chat-name">Select a conversation</div>
               <div class="chat-header-status" id="chat-header-status">vetsi · End-to-end private</div>
@@ -1894,27 +1529,6 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
       <div id="vetspace-view" class="page-view">
         <div class="page-title">Vet Space 🐾</div>
         <div class="page-subtitle">Anonymous discussion for UK vets — your identity is never revealed</div>
-
-        <!-- Mobile-only sleek dropdowns -->
-        <div class="mob-vs-toolbar">
-          <select class="mob-vs-select" id="mob-vs-cat" onchange="setVsFilterMobile(this.value)">
-            <option value="all">All categories</option>
-            <option value="case">🩺 Case Discussion</option>
-            <option value="salary">💷 Salary &amp; Pay</option>
-            <option value="cpd">📚 CPD</option>
-            <option value="culture">🏥 Practice Culture</option>
-            <option value="locum">🔄 Locum Life</option>
-            <option value="wellbeing">🧠 Wellbeing</option>
-            <option value="career">💼 Career Moves</option>
-            <option value="general">🐾 General</option>
-          </select>
-          <select class="mob-vs-select" id="mob-vs-sort" onchange="setVsSortMobile(this.value)">
-            <option value="trending">🔥 Trending</option>
-            <option value="new">🆕 New</option>
-            <option value="top">⭐ Top</option>
-          </select>
-          <button class="mob-vs-newpost" onclick="togglePostForm()" aria-label="New post">+</button>
-        </div>
 
         <!-- Category filter -->
         <div class="vs-filters" id="vs-filters">
@@ -2190,19 +1804,7 @@ html, body { height:100%; overflow:hidden; font-family:'DM Sans', sans-serif; ba
 
     </div><!-- /content -->
   </main>
-  <!-- MOBILE FAB (replaces the bottom tab bar) -->
-  <div class="mob-fab-backdrop" id="mob-fab-backdrop" onclick="closeFabMenu()"></div>
-  <div class="mob-fab-wrap" id="mob-fab-wrap">
-    <div class="mob-fab-stack" id="mob-fab-stack"></div>
-    <button class="mob-fab" id="mob-fab" onclick="toggleFabMenu()" aria-label="Open menu">
-      <span class="mob-fab-dot" id="mob-fab-dot"></span>
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-    </button>
-  </div>
-  <!-- legacy more sheet kept harmless (not used by FAB but referenced by some old code paths) -->
+  <!-- MOBILE MORE MENU -->
   <div id="mobile-more-overlay" onclick="closeMobileMore()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;"></div>
   <div id="mobile-more-sheet" style="display:none;position:fixed;left:0;right:0;bottom:64px;background:#0d2b1f;border-radius:20px 20px 0 0;z-index:301;border-top:1px solid rgba(62,207,110,0.2);padding:8px 0 24px;">
     <div style="width:36px;height:4px;background:rgba(62,207,110,0.2);border-radius:2px;margin:10px auto 20px;"></div>
@@ -2510,11 +2112,7 @@ function navigate(view) {
     distInfo.style.display = 'none';
   }
 
-  if (view === 'messages') {
-    initMessages();
-    // On mobile, always start on the conversation list (chat pane closed)
-    if (window.innerWidth <= 768) closeChatPane();
-  }
+  if (view === 'messages') initMessages();
   if (view === 'news') loadNews();
   if (view === 'vetspace') initVetSpace();
 }
@@ -2752,20 +2350,6 @@ function openDrawer(id) {
   }
   document.getElementById('d-addr').textContent = cleanAddr;
 
-  // Build a cleaned-up website cell for the Overview grid (matches phone/rating style)
-  let websiteCell = '';
-  if (p.website) {
-    let href = p.website.trim();
-    if (!/^https?:\/\//i.test(href)) href = 'https://' + href;
-    // Display just the domain — no protocol, no www, no trailing slash, no long path
-    let display = href.replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, '');
-    const slashIdx = display.indexOf('/');
-    if (slashIdx > 0) display = display.slice(0, slashIdx);
-    // Escape quotes so href attribute stays valid
-    const safeHref = href.replace(/"/g, '&quot;');
-    websiteCell = `<div class="drawer-stat"><a href="${safeHref}" target="_blank" rel="noopener" style="text-decoration:none;display:block;"><div class="drawer-stat-val" style="font-size:13px;color:var(--mint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${display} ↗</div><div class="drawer-stat-label">Website</div></a></div>`;
-  }
-
   // Ownership pill with tooltip for independent_or_unknown sourced data
   const ownershipPill = p.ownership === 'Independent'
     ? `<span class="pc-tag independent" style="position:relative;">
@@ -2796,7 +2380,7 @@ function openDrawer(id) {
     ${p.schedule && p.schedule !== '—' ? `<div class="drawer-stat"><div class="drawer-stat-val">${p.schedule}</div><div class="drawer-stat-label">Schedule</div></div>` : ''}
     ${distLine}
     ${p.phone ? `<div class="drawer-stat"><div class="drawer-stat-val" style="font-size:13px;">${p.phone}</div><div class="drawer-stat-label">Phone</div></div>` : ''}
-    ${websiteCell}
+    ${p.website ? `<div class="drawer-stat"><div class="drawer-stat-val" style="font-size:13px;"><a href="${p.website}" target="_blank" style="color:var(--mint)">Visit website ↗</a></div><div class="drawer-stat-label">Website</div></div>` : ''}
   `;
 
   document.getElementById('d-species').innerHTML = p.species.length
@@ -3066,10 +2650,6 @@ function updateDrawerInterestState(hospitalId) {
 function closeDrawer() {
   document.getElementById('drawer').classList.remove('open');
   setTimeout(() => map.invalidateSize(), 320);
-  // On mobile, ensure the practice list sheet is restored to its default snap point
-  if (window.innerWidth <= 768 && typeof sheetSnapTo === 'function') {
-    sheetSnapTo(SHEET_SNAP_MID);
-  }
 }
 
 // ─────────────────────────────────────────
@@ -3511,36 +3091,21 @@ async function loadVsPosts() {
     return;
   }
 
-  // Fetch identities separately for all unique author_ids
-  const authorIds = [...new Set(posts.map(p => p.author_id))];
-  const { data: identities } = await sb.from('vet_identities')
-    .select('user_id, username, colour')
-    .in('user_id', authorIds);
-  const identityMap = {};
-  (identities||[]).forEach(i => { identityMap[i.user_id] = i; });
-
-  // Fetch replies
+  // Fetch replies for all posts in one query — username/colour come directly from each row
   const postIds = posts.map(p => p.id);
   let repliesByPost = {};
   if (postIds.length > 0) {
     const { data: replies } = await sb.from('vet_replies')
-      .select('id, post_id, author_id, body, likes, removed, report_count, parent_reply_id, created_at')
+      .select('id, post_id, author_id, author_username, author_colour, body, likes, removed, report_count, parent_reply_id, created_at')
       .in('post_id', postIds)
       .eq('removed', false)
       .order('created_at', { ascending: true });
 
-    // Fetch reply author identities
-    const replyAuthorIds = [...new Set((replies||[]).map(r => r.author_id))];
-    let replyIdentityMap = {};
-    if (replyAuthorIds.length > 0) {
-      const { data: rIdents } = await sb.from('vet_identities')
-        .select('user_id, username, colour')
-        .in('user_id', replyAuthorIds);
-      (rIdents||[]).forEach(i => { replyIdentityMap[i.user_id] = i; });
-    }
-
     (replies||[]).forEach(r => {
-      r._identity = replyIdentityMap[r.author_id] || { username:'VetsiVet????', colour:'#3ecf6e' };
+      r._identity = {
+        username: r.author_username || 'VetsiVet????',
+        colour: r.author_colour || '#3ecf6e'
+      };
       if (!repliesByPost[r.post_id]) repliesByPost[r.post_id] = [];
       repliesByPost[r.post_id].push(r);
     });
@@ -3548,7 +3113,10 @@ async function loadVsPosts() {
 
   vsPosts = posts.map(p => ({
     ...p,
-    _identity: identityMap[p.author_id] || { username:'VetsiVet????', colour:'#3ecf6e' },
+    _identity: {
+      username: p.author_username || 'VetsiVet????',
+      colour: p.author_colour || '#3ecf6e'
+    },
     _replies: repliesByPost[p.id] || []
   }));
   renderVsPosts();
@@ -3657,25 +3225,6 @@ function setVsSort(btn) {
   vsSort = btn.dataset.sort;
   renderVsPosts();
 }
-
-// Mobile dropdown handlers — keep state in sync with desktop pills/buttons
-function setVsFilterMobile(value) {
-  vsFilter = value;
-  // Sync desktop pill state too (in case user resizes)
-  document.querySelectorAll('#vs-filters [data-cat]').forEach(b => {
-    b.classList.toggle('active', b.dataset.cat === value);
-  });
-  renderVsPosts();
-}
-
-function setVsSortMobile(value) {
-  vsSort = value;
-  // Sync desktop sort buttons too
-  document.querySelectorAll('.vs-sort-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.sort === value);
-  });
-  renderVsPosts();
-}
 function togglePostForm() {
   document.getElementById('vs-post-form').classList.toggle('open');
 }
@@ -3684,10 +3233,14 @@ async function submitPost() {
   const body = document.getElementById('vs-post-body').value.trim();
   const category = document.getElementById('vs-cat-select').value;
   if (!title) { showToast('⚠️ Please enter a title'); return; }
+  const identity = await getOrCreateIdentity();
   const btn = document.getElementById('vs-submit-btn');
   btn.disabled = true; btn.textContent = 'Posting…';
   const { error } = await sb.from('vet_posts').insert({
-    author_id: currentUser.id, category, title, body: body||null, likes: 0
+    author_id: currentUser.id,
+    author_username: identity.username,
+    author_colour: identity.colour,
+    category, title, body: body||null, likes: 0
   });
   btn.disabled = false; btn.textContent = 'Post anonymously';
   if (error) { showToast('⚠️ Could not post — ' + error.message); return; }
@@ -3718,9 +3271,12 @@ async function submitReply(postId, parentReplyId) {
   if (!body) return;
   ta.disabled = true;
 
+  const identity = await getOrCreateIdentity();
   const payload = {
     post_id: postId,
     author_id: currentUser.id,
+    author_username: identity.username,
+    author_colour: identity.colour,
     body,
     likes: 0,
   };
@@ -3952,10 +3508,10 @@ async function initMessages(background = false) {
   if (!data || data.length === 0) {
     if (!background) {
       list.innerHTML = `
-        <div class="mob-msg-empty">
-          <div class="ico">💬</div>
-          <div class="title">No conversations yet</div>
-          <div class="body">Once you start communicating with hospitals directly, you'll see your conversations here.</div>
+        <div style="padding:24px 16px;text-align:center;color:var(--text-muted);">
+          <div style="font-size:28px;margin-bottom:8px;">💬</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;">No messages yet</div>
+          <div style="font-size:12px;line-height:1.5;">When a practice messages you through vetsi, it'll appear here.</div>
         </div>`;
       document.getElementById('chat-name').textContent = 'Messages';
       document.getElementById('chat-messages').innerHTML = '';
@@ -4010,10 +3566,8 @@ async function initMessages(background = false) {
       </div>`;
   }).join('');
 
-  // Only auto-load the conversation if NOT a background refresh AND not on mobile
-  if (!background && threads.length > 0 && window.innerWidth > 768) {
-    await renderChat(activeMsgThread);
-  }
+  // Only auto-load the conversation if NOT a background refresh
+  if (!background && threads.length > 0) await renderChat(activeMsgThread);
 }
 
 function updateMsgBadge(count) {
@@ -4034,18 +3588,6 @@ async function switchThread(i) {
   // Re-render list to update active state
   const items = document.querySelectorAll('.message-thread');
   items.forEach((el, idx) => el.classList.toggle('active', idx === i));
-  // On mobile, slide the chat pane in over the list
-  if (window.innerWidth <= 768) openChatPane();
-}
-
-function openChatPane() {
-  const panel = document.getElementById('chat-panel');
-  if (panel) panel.classList.add('open');
-}
-
-function closeChatPane() {
-  const panel = document.getElementById('chat-panel');
-  if (panel) panel.classList.remove('open');
 }
 
 async function renderChat(i) {
@@ -4054,11 +3596,6 @@ async function renderChat(i) {
   activeConversation = t;
 
   document.getElementById('chat-name').textContent = t.hospitalName;
-  // Mobile chat header
-  const mobName = document.getElementById('mob-chat-name');
-  const mobSub = document.getElementById('mob-chat-sub');
-  if (mobName) mobName.textContent = t.hospitalName;
-  if (mobSub) mobSub.textContent = 'vetsi · End-to-end private';
   document.getElementById('chat-messages').innerHTML = '<div style="padding:12px;font-size:12px;color:var(--text-muted);">Loading…</div>';
 
   const { data, error } = await sb.from('messages')
@@ -4101,9 +3638,8 @@ async function renderChat(i) {
   const interest = myInterests[t.hospitalId];
   const privacyLabel = interest ? { anon:'👻 Anonymous', semi:'🔓 Semi-visible', full:'✅ Full profile' }[interest.privacy_mode] : null;
 
-  // Render express interest banner (desktop) + mobile privacy bar
+  // Render express interest banner
   const bannerEl = document.getElementById('express-interest-banner');
-  const mobBar = document.getElementById('mob-privacy-bar');
   if (bannerEl) {
     if (hasInterest) {
       const canUpgrade = interest.privacy_mode !== 'full';
@@ -4121,23 +3657,6 @@ async function renderChat(i) {
           <div class="eib-text">Right now, <strong>${t.hospitalName}</strong> can only see your specialty and years of experience. Your name and personal details are completely hidden. Hit Express Interest to share more of your profile when you're ready.</div>
           <button class="eib-btn" onclick="expressInterestFromMessages('${t.hospitalId}', '${t.hospitalName}')">Express Interest →</button>
         </div>`;
-    }
-  }
-  if (mobBar) {
-    if (hasInterest) {
-      const canUpgrade = interest.privacy_mode !== 'full';
-      mobBar.innerHTML = `
-        <span class="ico">🔒</span>
-        <span class="txt">Sharing as <strong>${privacyLabel}</strong></span>
-        ${canUpgrade
-          ? `<button class="upgrade-btn" onclick="confirmFullProfile('${t.hospitalId}', '${t.hospitalName.replace(/'/g, "\\'")}')">Share full</button>`
-          : `<button class="upgrade-btn locked">Full ✓</button>`
-        }`;
-    } else {
-      mobBar.innerHTML = `
-        <span class="ico">👻</span>
-        <span class="txt">You're <strong>anonymous</strong> to this practice</span>
-        <button class="upgrade-btn" onclick="expressInterestFromMessages('${t.hospitalId}', '${t.hospitalName.replace(/'/g, "\\'")}')">Share profile</button>`;
     }
   }
 
@@ -4678,7 +4197,6 @@ document.addEventListener('keydown', e => {
   if (document.getElementById('interest-panel')?.classList.contains('open')) { closeModal(); return; }
   if (document.getElementById('message-composer-panel')?.classList.contains('open')) { closeMessagePanel(); return; }
   if (document.getElementById('mobile-more-sheet')?.style.display === 'block') { closeMobileMore(); return; }
-  if (mobFabOpen) { closeFabMenu(); return; }
 });
 
 window.addEventListener('load', async () => {
@@ -4709,188 +4227,94 @@ window.addEventListener('load', async () => {
   document.getElementById('signin-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleSignIn(); });
   document.getElementById('signup-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleSignUp(); });
 
-  // Build mobile FAB if on mobile
-  if (window.innerWidth <= 768) buildMobileFab();
+  // Build mobile tab bar if on mobile
+  if (window.innerWidth <= 768) buildMobileTabBar();
   window.addEventListener('resize', () => {
-    if (window.innerWidth <= 768) buildMobileFab();
+    if (window.innerWidth <= 768) buildMobileTabBar();
   });
 });
 
 // ─────────────────────────────────────────
-//  MOBILE FAB NAV (replaces bottom tab bar)
+//  MOBILE TAB BAR
 // ─────────────────────────────────────────
-const MOB_FAB_ITEMS = [
-  // Items render BOTTOM-UP (last in array sits closest to FAB)
-  { view:'settings', label:'Settings', svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>' },
-  { view:'news',     label:'News',     svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>' },
-  { view:'salary',   label:'Salary',   svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>' },
-  { view:'snapshot', label:'Snapshot', svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' },
-  { view:'profile',  label:'Profile',  svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
-  { view:'vetspace', label:'Vet Space',svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
-  { view:'messages', label:'Messages', badge:true, svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' },
-  { view:'map',      label:'Map',      svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' },
+const MOB_PRIMARY = [
+  { view:'map',      label:'Map',      svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' },
+  { view:'messages', label:'Messages', svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>', badge:'msg-nav-badge' },
+  { view:'vetspace', label:'Community', svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
+  { view:'profile',  label:'Profile',  svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
+  { view:'more',     label:'More',     svg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>' },
 ];
 
-let mobFabBuilt = false;
-let mobFabOpen = false;
+const MOB_MORE = [
+  { view:'snapshot', label:'Snapshot',  svg:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' },
+  { view:'salary',   label:'Salary',   svg:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>' },
+  { view:'news',     label:'News',     svg:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>' },
+  { view:'settings', label:'Settings', svg:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>' },
+];
 
-function buildMobileFab() {
-  if (mobFabBuilt) return;
-  mobFabBuilt = true;
+let mobTabsBuilt = false;
 
-  const stack = document.getElementById('mob-fab-stack');
-  if (!stack) return;
+function buildMobileTabBar() {
+  if (mobTabsBuilt) return;
+  mobTabsBuilt = true;
 
-  stack.innerHTML = MOB_FAB_ITEMS.map(item => `
-    <div class="mob-fab-item ${currentActiveView === item.view ? 'active' : ''}"
-         data-fab-view="${item.view}"
-         onclick="handleFabSelect('${item.view}')">
-      <span class="mob-fab-label">${item.label}</span>
-      <button class="mob-fab-icon" aria-label="${item.label}">
-        ${item.svg}
-        ${item.badge ? '<span class="mob-fab-item-dot" id="mob-fab-item-dot-' + item.view + '"></span>' : ''}
-      </button>
-    </div>
+  const nav = document.querySelector('.nav');
+  if (!nav) return;
+
+  // Build primary tabs
+  nav.innerHTML = MOB_PRIMARY.map(t => `
+    <button class="mob-tab ${currentActiveView === t.view || (t.view === 'map' && currentActiveView === 'map') ? 'active' : ''}"
+            data-mob-view="${t.view}" onclick="handleMobTab('${t.view}')">
+      ${t.svg}
+      <span class="mob-tab-label">${t.label}</span>
+      ${t.badge ? `<span class="mob-tab-dot" id="mob-dot-${t.view}"></span>` : ''}
+    </button>
   `).join('');
 
+  // Sync message badge dot
   syncMobBadge();
+
+  // Build more sheet items
+  const moreItems = document.getElementById('mobile-more-items');
+  if (moreItems) {
+    moreItems.innerHTML = MOB_MORE.map(t => `
+      <div class="more-item" onclick="handleMobTab('${t.view}');closeMobileMore();">
+        ${t.svg}
+        <span class="more-item-label">${t.label}</span>
+      </div>
+    `).join('');
+  }
 }
 
-function toggleFabMenu() {
-  if (mobFabOpen) closeFabMenu();
-  else openFabMenu();
-}
-
-function openFabMenu() {
-  mobFabOpen = true;
-  document.getElementById('mob-fab')?.classList.add('open');
-  document.getElementById('mob-fab-stack')?.classList.add('open');
-  document.getElementById('mob-fab-backdrop')?.classList.add('open');
-  // Refresh active markers
-  document.querySelectorAll('.mob-fab-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.fabView === currentActiveView);
+function handleMobTab(view) {
+  if (view === 'more') {
+    openMobileMore();
+    return;
+  }
+  // Update active state on tabs
+  document.querySelectorAll('.mob-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.mobView === view);
   });
-}
-
-function closeFabMenu() {
-  mobFabOpen = false;
-  document.getElementById('mob-fab')?.classList.remove('open');
-  document.getElementById('mob-fab-stack')?.classList.remove('open');
-  document.getElementById('mob-fab-backdrop')?.classList.remove('open');
-}
-
-function handleFabSelect(view) {
-  closeFabMenu();
   navigate(view);
 }
 
-// Legacy stubs — kept so any old code paths don't break
-function buildMobileTabBar() { buildMobileFab(); }
-function handleMobTab(view) { handleFabSelect(view); }
-function openMobileMore() { openFabMenu(); }
-function closeMobileMore() { closeFabMenu(); }
+function openMobileMore() {
+  document.getElementById('mobile-more-overlay').style.display = 'block';
+  document.getElementById('mobile-more-sheet').style.display = 'block';
+}
+
+function closeMobileMore() {
+  document.getElementById('mobile-more-overlay').style.display = 'none';
+  document.getElementById('mobile-more-sheet').style.display = 'none';
+}
 
 function syncMobBadge() {
   const badge = document.getElementById('msg-nav-badge');
-  const fabDot = document.getElementById('mob-fab-dot');
-  const itemDot = document.getElementById('mob-fab-item-dot-messages');
-  const visible = badge && badge.style.display !== 'none' && badge.textContent !== '0' && badge.textContent !== '';
-  if (fabDot) fabDot.classList.toggle('show', !!visible);
-  if (itemDot) itemDot.classList.toggle('show', !!visible);
+  const dot = document.getElementById('mob-dot-messages');
+  if (!badge || !dot) return;
+  const visible = badge.style.display !== 'none' && badge.textContent !== '0' && badge.textContent !== '';
+  dot.classList.toggle('show', visible);
 }
-
-// ─────────────────────────────────────────
-//  PRACTICE LIST BOTTOM SHEET — drag with 3 snap points (mobile only)
-// ─────────────────────────────────────────
-// Snap points as percentage of viewport height
-const SHEET_SNAP_TOP = 92;     // see only the list
-const SHEET_SNAP_MID = 42;     // default
-const SHEET_SNAP_BOTTOM = 12;  // see only the map
-let sheetCurrentSnap = SHEET_SNAP_MID;
-let sheetDragStartY = 0;
-let sheetDragStartHeight = 0;
-let sheetDragging = false;
-
-function sheetSetHeight(percent) {
-  const panel = document.getElementById('practice-list-panel');
-  if (!panel) return;
-  panel.style.setProperty('--sheet-height', percent + '%');
-}
-
-function sheetSnapTo(percent) {
-  sheetCurrentSnap = percent;
-  sheetSetHeight(percent);
-}
-
-function sheetOnPointerDown(e) {
-  if (window.innerWidth > 768) return;
-  sheetDragging = true;
-  const panel = document.getElementById('practice-list-panel');
-  if (!panel) return;
-  panel.classList.add('dragging');
-  sheetDragStartY = (e.touches ? e.touches[0].clientY : e.clientY);
-  // Read current height from getBoundingClientRect for accuracy
-  sheetDragStartHeight = panel.getBoundingClientRect().height;
-  e.preventDefault();
-}
-
-function sheetOnPointerMove(e) {
-  if (!sheetDragging) return;
-  const panel = document.getElementById('practice-list-panel');
-  if (!panel) return;
-  const y = (e.touches ? e.touches[0].clientY : e.clientY);
-  const delta = sheetDragStartY - y; // drag up = positive
-  const newHeightPx = sheetDragStartHeight + delta;
-  const vh = window.innerHeight;
-  let pct = (newHeightPx / vh) * 100;
-  // Clamp
-  if (pct < 8) pct = 8;
-  if (pct > 95) pct = 95;
-  sheetSetHeight(pct);
-  e.preventDefault();
-}
-
-function sheetOnPointerUp() {
-  if (!sheetDragging) return;
-  sheetDragging = false;
-  const panel = document.getElementById('practice-list-panel');
-  if (!panel) return;
-  panel.classList.remove('dragging');
-  // Snap to nearest of TOP, MID, BOTTOM
-  const currentPct = (panel.getBoundingClientRect().height / window.innerHeight) * 100;
-  const snaps = [SHEET_SNAP_BOTTOM, SHEET_SNAP_MID, SHEET_SNAP_TOP];
-  let nearest = snaps[0];
-  let nearestDist = Math.abs(currentPct - snaps[0]);
-  for (const s of snaps) {
-    const d = Math.abs(currentPct - s);
-    if (d < nearestDist) { nearest = s; nearestDist = d; }
-  }
-  sheetSnapTo(nearest);
-}
-
-function initSheetDrag() {
-  const handle = document.getElementById('sheet-drag-handle');
-  if (!handle || handle.dataset.bound === '1') return;
-  handle.dataset.bound = '1';
-  handle.addEventListener('touchstart', sheetOnPointerDown, { passive: false });
-  handle.addEventListener('touchmove', sheetOnPointerMove, { passive: false });
-  handle.addEventListener('touchend', sheetOnPointerUp);
-  handle.addEventListener('touchcancel', sheetOnPointerUp);
-  // Mouse fallback for testing in desktop dev tools mobile mode
-  handle.addEventListener('mousedown', sheetOnPointerDown);
-  document.addEventListener('mousemove', sheetOnPointerMove);
-  document.addEventListener('mouseup', sheetOnPointerUp);
-  // Default snap
-  sheetSnapTo(SHEET_SNAP_MID);
-}
-
-// Init on load (mobile only)
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.innerWidth <= 768) initSheetDrag();
-});
-window.addEventListener('resize', () => {
-  if (window.innerWidth <= 768) initSheetDrag();
-});
 </script>
 <!-- VET DELETE ACCOUNT MODAL -->
 <div id="vet-delete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:16px;">
